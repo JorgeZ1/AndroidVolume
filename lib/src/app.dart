@@ -11,7 +11,6 @@ import 'package:floating_volume/src/bloc/permissions/state.dart'
 import 'package:floating_volume/src/bloc/status/bloc.dart' as bstatus;
 import 'package:floating_volume/src/bloc/status/event.dart' as estatus;
 import 'package:floating_volume/src/bloc/status/state.dart' as sstatus;
-import 'package:device_info_plus/device_info_plus.dart';
 
 import 'package:floating_volume/src/bloc/theme/bloc.dart' as btheme;
 import 'package:floating_volume/src/bloc/theme/state.dart' as stheme;
@@ -42,18 +41,42 @@ class FloatingVolumeApp extends StatelessWidget {
 }
 
 class _FloatingVolumeAppView extends StatelessWidget {
-  const _FloatingVolumeAppView({super.key});
+  const _FloatingVolumeAppView();
+
+  // Azul vibrante del diseño de referencia
+  static const _seed = Color(0xFF2979FF);
+
+  static final _lightTheme = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: _seed,
+      brightness: Brightness.light,
+    ),
+  );
+
+  static final _darkTheme = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: _seed,
+      brightness: Brightness.dark,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) => BlocBuilder<btheme.Bloc, stheme.State>(
     builder: (context, state) {
-      final themeData = switch (state.theme) {
-        stheme.Theme.dark => ThemeData.dark(),
-        stheme.Theme.light => ThemeData.light(),
-        stheme.Theme.system => null,
+      final themeMode = switch (state.theme) {
+        stheme.Theme.dark => ThemeMode.dark,
+        stheme.Theme.light => ThemeMode.light,
+        stheme.Theme.system => ThemeMode.system,
       };
 
-      return MaterialApp(home: HomeScreen(), theme: themeData);
+      return MaterialApp(
+        home: const HomeScreen(),
+        theme: _lightTheme,
+        darkTheme: _darkTheme,
+        themeMode: themeMode,
+      );
     },
   );
 }

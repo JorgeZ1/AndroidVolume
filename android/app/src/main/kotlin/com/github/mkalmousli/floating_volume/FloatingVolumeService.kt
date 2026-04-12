@@ -1,11 +1,13 @@
 package com.github.mkalmousli.floating_volume
 
 import android.Manifest
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
@@ -15,11 +17,14 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.WindowManager
 import android.view.WindowManager.LayoutParams
+import android.view.animation.DecelerateInterpolator
+import androidx.core.animation.doOnEnd
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.github.mkalmousli.floating_volume.bloc.PositionBloc
 import com.github.mkalmousli.floating_volume.bloc.ServiceStatusBloc
+import com.github.mkalmousli.floating_volume.bloc.SystemVolumeBloc
 import com.github.mkalmousli.floating_volume.bloc.VisibilityBloc
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +36,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class FloatingVolumeService : Service() {
     private val scope = CoroutineScope(Job())
@@ -42,76 +49,107 @@ class FloatingVolumeService : Service() {
 
     override fun onBind(intent: Intent?) = null
 
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onCreate() {
         super.onCreate()
+        // Load persisted settings and register for live updates
+        WidgetSettings.load(sharedPrefs)
+        WidgetSettings.addListener(::onSettingsChanged)
     }
 
+    private fun onSettingsChanged() {
+        newInMain { floatingMuteView.applyTheme() }
+    }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        floatingMuteView.dispatchConfigurationChanged(newConfig)
+        volumeIndicatorView?.dispatchConfigurationChanged(newConfig)
+    }
 
     private val windowManager: WindowManager by lazy {
         getSystemService(WINDOW_SERVICE) as WindowManager
     }
 
+    private val audioManager: AudioManager by lazy {
+        getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
 
     private val floatingMuteView by lazy {
         FloatingVolumeView(this)
     }
 
+    // ── Volume indicator overlay ─────────────────────────────────────────────
+    private var volumeIndicatorView: VolumeIndicatorView? = null
+    private var indicatorParams: LayoutParams? = null
+    private var hideIndicatorJob: Job? = null
 
     private var layoutParams =
         LayoutParams(
             LayoutParams.WRAP_CONTENT,
             LayoutParams.WRAP_CONTENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 LayoutParams.TYPE_APPLICATION_OVERLAY
-            } else {
-                @Suppress("DEPRECATION")
-                LayoutParams.TYPE_PHONE
-            },
+            else
+                @Suppress("DEPRECATION") LayoutParams.TYPE_PHONE,
             LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        )
+            PixelFormat.TRANSLUCENT,
+        ).also {
+            it.gravity = android.view.Gravity.TOP or android.view.Gravity.START
+        }
 
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).roundToInt()
 
-
+    // ---------------------------------------------------------------------------
+    // Touch / Drag / Snap / Volume
+    // ---------------------------------------------------------------------------
 
     @SuppressLint("ClickableViewAccessibility")
     fun configureTouchListener() {
-        var initialX = 0
-        var initialY = 0
-        var initialTouchX = 0f
-        var initialTouchY = 0f
+        var startWindowX  = 0
+        var startWindowY  = 0
+        var startTouchX   = 0f
+        var startTouchY   = 0f
+        var isDragging    = false
+        val dragThreshold = dp(8).toFloat()
 
         floatingMuteView.handleIv.setOnTouchListener { _, event ->
             when (event.action) {
+
                 MotionEvent.ACTION_DOWN -> {
-                    initialX = layoutParams.x
-                    initialY = layoutParams.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
+                    startWindowX = layoutParams.x
+                    startWindowY = layoutParams.y
+                    startTouchX  = event.rawX
+                    startTouchY  = event.rawY
+                    isDragging   = false
                     true
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    val dx = event.rawX - initialTouchX
-                    val dy = event.rawY - initialTouchY
+                    val dx = event.rawX - startTouchX
+                    val dy = event.rawY - startTouchY
 
-                    val newX = initialX + dx.toInt()
-                    val newY = initialY + dy.toInt()
-
-                    layoutParams.x = newX
-                    layoutParams.y = newY
-
-                    newInIO {
-                        PositionBloc.event.emit(
-                            PositionBloc.Event.UpdatePosition(
-                                PositionBloc.Position(newX, newY)
-                            )
-                        )
+                    if (!isDragging && (abs(dx) > dragThreshold || abs(dy) > dragThreshold)) {
+                        isDragging = true
                     }
 
-                    windowManager.updateViewLayout(floatingMuteView, layoutParams)
+                    if (isDragging) {
+                        layoutParams.x = startWindowX + dx.toInt()
+                        layoutParams.y = startWindowY + dy.toInt()
+                        windowManager.updateViewLayout(floatingMuteView, layoutParams)
+                    }
+                    true
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    if (isDragging) {
+                        snapToEdge()
+                    } else {
+                        val tapY  = event.y
+                        val midY  = floatingMuteView.height / 2f
+                        val up    = tapY < midY
+                        changeVolume(up)
+                        floatingMuteView.flashButton(up)
+                    }
                     true
                 }
 
@@ -120,14 +158,108 @@ class FloatingVolumeService : Service() {
         }
     }
 
+    private fun snapToEdge() {
+        val screenW = resources.displayMetrics.widthPixels
+        val widgetW = floatingMuteView.width.takeIf { it > 0 } ?: dp(64)
+        val margin  = dp(8)
 
+        val targetX = if (layoutParams.x + widgetW / 2 < screenW / 2)
+            margin                          // snap izquierda
+        else
+            screenW - widgetW - margin      // snap derecha
 
+        ValueAnimator.ofInt(layoutParams.x, targetX).apply {
+            duration     = 280L
+            interpolator = DecelerateInterpolator()
+            addUpdateListener {
+                layoutParams.x = it.animatedValue as Int
+                windowManager.updateViewLayout(floatingMuteView, layoutParams)
+            }
+            doOnEnd {
+                newInIO {
+                    PositionBloc.event.emit(
+                        PositionBloc.Event.UpdatePosition(
+                            PositionBloc.Position(targetX, layoutParams.y)
+                        )
+                    )
+                }
+            }
+            start()
+        }
+    }
 
+    private fun changeVolume(increase: Boolean) {
+        audioManager.adjustVolume(
+            if (increase) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
+            0,
+        )
+        newInMain { showVolumeIndicator() }
+    }
 
+    private fun showVolumeIndicator() {
+        val volume    = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+
+        val screenW  = resources.displayMetrics.widthPixels
+        val widgetW  = floatingMuteView.width.takeIf { it > 0 } ?: dp(64)
+        val widgetH  = floatingMuteView.height.takeIf { it > 0 } ?: dp(140)
+        val indW     = dp(76)
+        val indH     = dp(180)
+        val gap      = dp(10)
+
+        val isOnRight = layoutParams.x + widgetW / 2 > screenW / 2
+        val indX = if (isOnRight)
+            layoutParams.x - indW - gap
+        else
+            layoutParams.x + widgetW + gap
+        val indY = (layoutParams.y + widgetH / 2 - indH / 2).coerceAtLeast(dp(8))
+
+        if (volumeIndicatorView == null) {
+            volumeIndicatorView = VolumeIndicatorView(this)
+            indicatorParams = LayoutParams(
+                indW, indH,
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                    LayoutParams.TYPE_APPLICATION_OVERLAY
+                else
+                    @Suppress("DEPRECATION") LayoutParams.TYPE_PHONE,
+                LayoutParams.FLAG_NOT_FOCUSABLE or LayoutParams.FLAG_NOT_TOUCHABLE,
+                PixelFormat.TRANSLUCENT,
+            ).also {
+                it.gravity = android.view.Gravity.TOP or android.view.Gravity.START
+                it.x = indX
+                it.y = indY
+            }
+            volumeIndicatorView!!.update(volume, maxVolume)
+            windowManager.addView(volumeIndicatorView, indicatorParams)
+        } else {
+            volumeIndicatorView!!.update(volume, maxVolume)
+            indicatorParams!!.x = indX
+            indicatorParams!!.y = indY
+            windowManager.updateViewLayout(volumeIndicatorView, indicatorParams)
+        }
+
+        // Auto-hide after 1.8 s; reset timer if pressed again
+        hideIndicatorJob?.cancel()
+        hideIndicatorJob = newInMain {
+            kotlinx.coroutines.delay(1800)
+            hideVolumeIndicator()
+        }
+    }
+
+    private fun hideVolumeIndicator() {
+        volumeIndicatorView?.let {
+            if (it.isAttachedToWindow) windowManager.removeView(it)
+        }
+        volumeIndicatorView = null
+        indicatorParams     = null
+    }
+
+    // ---------------------------------------------------------------------------
+    // Show / lifecycle
+    // ---------------------------------------------------------------------------
 
     private suspend fun showFloatingMuteView() {
         Log.d(TAG, "Showing Floating Mute View")
-
         val position = PositionBloc.state
             .filterIsInstance<PositionBloc.State.Initialized>()
             .map { it.position }
@@ -140,14 +272,9 @@ class FloatingVolumeService : Service() {
         }
     }
 
-
-
-
-
     private var isFirstStart = true
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
         Log.d("FloatingViewService", "onStartCommand called")
 
         fun createPendingIntent(action: NotificationBroadcastReceiver.Action): PendingIntent {
@@ -155,9 +282,9 @@ class FloatingVolumeService : Service() {
             i.putExtra("action", action.ordinal)
             return PendingIntent.getBroadcast(
                 this@FloatingVolumeService,
-                100 + action.ordinal, // Unique request code for each action
+                100 + action.ordinal,
                 i,
-                PendingIntent.FLAG_IMMUTABLE // Specify it as mutable
+                PendingIntent.FLAG_IMMUTABLE,
             )
         }
 
@@ -165,12 +292,8 @@ class FloatingVolumeService : Service() {
             ServiceStatusBloc.state
                 .filterIsInstance<ServiceStatusBloc.State.Off>()
                 .first()
-
-            inMain {
-                stopSelf()
-            }
+            inMain { stopSelf() }
         }
-
 
         scope.inIO {
             VisibilityBloc.state.collectLatest {
@@ -178,57 +301,34 @@ class FloatingVolumeService : Service() {
 
                 val notification = NotificationCompat.Builder(this@FloatingVolumeService, Const.NOTIFICATION_CHANNEL_ID)
                     .setContentTitle("Floating Volume")
-                    .setContentText(
-                        if (isVisible) "Floating Volume is visible" else "Floating Volume is hidden"
-                    )
+                    .setContentText(if (isVisible) "Floating Volume is visible" else "Floating Volume is hidden")
                     .setSmallIcon(R.drawable.logo)
-                    .setContentIntent(createPendingIntent(
-                        NotificationBroadcastReceiver.Action.LAUNCH_MAIN_ACTIVITY
-                    ))
+                    .setContentIntent(createPendingIntent(NotificationBroadcastReceiver.Action.LAUNCH_MAIN_ACTIVITY))
                     .setOngoing(true)
                     .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setAutoCancel(false)
-                    .setDeleteIntent(createPendingIntent(
-                        NotificationBroadcastReceiver.Action.STOP
-                    ))
-                    .addAction(
-                        android.R.color.transparent,
-                        "Stop",
-                        createPendingIntent(
-                            NotificationBroadcastReceiver.Action.STOP
-                        )
-                    )
-                    .addAction(
-                        android.R.color.transparent,
+                    .setDeleteIntent(createPendingIntent(NotificationBroadcastReceiver.Action.STOP))
+                    .addAction(android.R.color.transparent, "Stop",
+                        createPendingIntent(NotificationBroadcastReceiver.Action.STOP))
+                    .addAction(android.R.color.transparent,
                         if (isVisible) "Hide" else "Show",
-                        createPendingIntent(
-                            NotificationBroadcastReceiver.Action.TOGGLE_VISIBILITY
-                        )
-                    )
+                        createPendingIntent(NotificationBroadcastReceiver.Action.TOGGLE_VISIBILITY))
                     .build()
-
 
                 if (isFirstStart) {
                     isFirstStart = false
-
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        startForeground(
-                            NOTIFICATION_ID,
-                            notification,
-                            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-                        )
+                        startForeground(NOTIFICATION_ID, notification,
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
                     } else {
                         startForeground(NOTIFICATION_ID, notification)
                     }
                 } else {
                     if (ActivityCompat.checkSelfPermission(
                             this@FloatingVolumeService,
-                            Manifest.permission.POST_NOTIFICATIONS
+                            Manifest.permission.POST_NOTIFICATIONS,
                         ) != PackageManager.PERMISSION_GRANTED
-                    ) {
-                        // TODO:
-                        return@collectLatest
-                    }
+                    ) return@collectLatest
 
                     NotificationManagerCompat.from(this@FloatingVolumeService)
                         .notify(NOTIFICATION_ID, notification)
@@ -236,36 +336,23 @@ class FloatingVolumeService : Service() {
             }
         }
 
-
-
-
         Log.d(TAG, "Starting Floating Mute View")
         scope.inIO {
             showFloatingMuteView()
-            configureTouchListener()
+            withContext(Dispatchers.Main) { configureTouchListener() }
         }
-
-
 
         newInIO {
-            VisibilityBloc.state
-                .collectLatest {
-                    Log.d(TAG, "VisibilityBloc state changed: $it")
-                    when (it) {
-                        VisibilityBloc.State.Hidden -> {
-                            newInMain {
-                                floatingMuteView.visibility = android.view.View.GONE
-                            }
-                        }
-                        VisibilityBloc.State.Shown -> {
-                            newInMain {
-                                floatingMuteView.visibility = android.view.View.VISIBLE
-                            }
-                        }
-                    }
+            VisibilityBloc.state.collectLatest {
+                Log.d(TAG, "VisibilityBloc state changed: $it")
+                when (it) {
+                    VisibilityBloc.State.Hidden ->
+                        newInMain { floatingMuteView.visibility = android.view.View.GONE }
+                    VisibilityBloc.State.Shown ->
+                        newInMain { floatingMuteView.visibility = android.view.View.VISIBLE }
                 }
+            }
         }
-
 
         scope.inIO {
             PositionBloc.state
@@ -275,9 +362,7 @@ class FloatingVolumeService : Service() {
                     layoutParams.x = position.x
                     layoutParams.y = position.y
                     if (floatingMuteView.isAttachedToWindow) {
-                        inMain {
-                            windowManager.updateViewLayout(floatingMuteView, layoutParams)
-                        }
+                        inMain { windowManager.updateViewLayout(floatingMuteView, layoutParams) }
                     }
                 }
         }
@@ -285,19 +370,15 @@ class FloatingVolumeService : Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-
-
-
     override fun onDestroy() {
         super.onDestroy()
         scope.cancel()
-
-        val notificationManager = NotificationManagerCompat.from(this)
-        notificationManager.cancel(NOTIFICATION_ID)
-
+        hideIndicatorJob?.cancel()
+        WidgetSettings.removeListener(::onSettingsChanged)
+        NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID)
+        hideVolumeIndicator()
         if (floatingMuteView.isAttachedToWindow) {
             windowManager.removeView(floatingMuteView)
         }
     }
-
 }

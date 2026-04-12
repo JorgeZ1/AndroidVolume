@@ -1,22 +1,17 @@
 package com.github.mkalmousli.floating_volume
 
 import android.content.Context
-import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.*
-import android.widget.LinearLayout
+import android.widget.FrameLayout
 import androidx.core.view.updateLayoutParams
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.math.roundToInt
 
-class CoolSlider(
-    context: Context,
-) : LinearLayout(context) {
+class CoolSlider(context: Context) : FrameLayout(context) {
 
-    enum class Orientation {
-        Vertical,
-        Horizontal
-    }
+    enum class Orientation { Vertical, Horizontal }
 
     private val scope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
 
@@ -24,20 +19,61 @@ class CoolSlider(
     val min = MutableStateFlow(0)
     val value = MutableStateFlow(50)
     val isEnabled = MutableStateFlow(true)
-    val orientation = MutableStateFlow(Orientation.Horizontal)
+    val orientation = MutableStateFlow(Orientation.Vertical)
 
-    private val progressView by lazy {
-        View(context).apply {
-            setBackgroundColor(
-                0xFF4CAF50.toInt()
-            )
+    private val density get() = resources.displayMetrics.density
+    private val trackThickness get() = (4 * density).toInt()
+    private val thumbDiameter get() = (22 * density).toInt()
+
+    // Gray background track
+    private val trackView = View(context).apply {
+        background = GradientDrawable().apply {
+            setColor(0xFFE0E0E0.toInt())
+            cornerRadius = 100f
         }
     }
 
-    init {
-        addView(progressView)
-        gravity = Gravity.BOTTOM
+    // Blue fill (grows from bottom for vertical)
+    private val fillView = View(context).apply {
+        background = GradientDrawable().apply {
+            setColor(0xFF2979FF.toInt())
+            cornerRadius = 100f
+        }
+    }
 
+    // Blue circular thumb
+    private val thumbView = View(context).apply {
+        background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(0xFF2979FF.toInt())
+        }
+        elevation = 6 * resources.displayMetrics.density
+    }
+
+    init {
+        // Track — full height, centered horizontally
+        addView(
+            trackView,
+            LayoutParams(trackThickness, LayoutParams.MATCH_PARENT).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+            },
+        )
+
+        // Fill — bottom-anchored, same width as track
+        addView(
+            fillView,
+            LayoutParams(trackThickness, 0).apply {
+                gravity = Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM
+            },
+        )
+
+        // Thumb — positioned programmatically via translationY
+        addView(
+            thumbView,
+            LayoutParams(thumbDiameter, thumbDiameter).apply {
+                gravity = Gravity.CENTER_HORIZONTAL or Gravity.TOP
+            },
+        )
 
         setOnTouchListener { _, event ->
             if (!isEnabled.value || event == null) return@setOnTouchListener false
@@ -65,12 +101,10 @@ class CoolSlider(
             }
         }
 
-        addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            updateProgress()
-        }
+        addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> updateProgress() }
 
         scope.launch {
-            combine(value, min, max) { _, _, _ ->  }.collectLatest {
+            combine(value, min, max) { _, _, _ -> }.collectLatest {
                 updateProgress()
             }
         }
@@ -82,20 +116,31 @@ class CoolSlider(
 
         val fraction = ((value.value - min.value).toFloat() / range).coerceIn(0f, 1f)
 
-        if (orientation.value == Orientation.Horizontal) {
-            val total = width
-            val progressSize = (total * fraction).toInt()
-            progressView.updateLayoutParams<LayoutParams> {
-                width = progressSize
-                height = LayoutParams.MATCH_PARENT
-            }
-        } else {
+        if (orientation.value == Orientation.Vertical) {
             val total = height
-            val progressSize = (total * fraction).toInt()
-            progressView.updateLayoutParams<LayoutParams> {
-                height = progressSize
-                width = LayoutParams.MATCH_PARENT
+            val fillHeight = (total * fraction).toInt()
+
+            fillView.updateLayoutParams<LayoutParams> {
+                height = fillHeight
+                width = trackThickness
             }
+
+            // Thumb sits at the top edge of the fill
+            val thumbTop = (total - fillHeight - thumbDiameter / 2f)
+                .coerceIn(0f, (total - thumbDiameter).toFloat())
+            thumbView.translationY = thumbTop
+        } else {
+            val total = width
+            val fillWidth = (total * fraction).toInt()
+
+            fillView.updateLayoutParams<LayoutParams> {
+                width = fillWidth
+                height = trackThickness
+            }
+
+            val thumbLeft = (fillWidth - thumbDiameter / 2f)
+                .coerceIn(0f, (total - thumbDiameter).toFloat())
+            thumbView.translationX = thumbLeft
         }
     }
 

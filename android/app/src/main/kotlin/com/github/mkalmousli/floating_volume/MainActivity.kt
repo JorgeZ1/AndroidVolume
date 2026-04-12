@@ -18,6 +18,7 @@ import com.github.mkalmousli.floating_volume.pigeon_impl.NativeApiImpl
 import com.github.mkalmousli.floating_volume.pigeon_impl.ServiceStatusStreamHandlerImpl
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private fun createNotificationChannel() {
@@ -151,6 +152,36 @@ class MainActivity : FlutterActivity() {
                     flutterEngine.dartExecutor.binaryMessenger,
                     FloatingVolumeVisibilityStreamHandlerImpl(lifecycleScope)
                 )
+            }
+
+            inMain {
+                // Load persisted settings so they're ready before the service starts
+                WidgetSettings.load(sharedPrefs)
+
+                MethodChannel(
+                    flutterEngine.dartExecutor.binaryMessenger,
+                    "floating_volume/settings",
+                ).setMethodCallHandler { call, result ->
+                    when (call.method) {
+                        "setOpacity" -> {
+                            val v = (call.argument<Double>("value") ?: 1.0).toFloat()
+                            WidgetSettings.opacity = v
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setColorMode" -> {
+                            val mode = call.argument<String>("mode") ?: "auto"
+                            WidgetSettings.colorMode = when (mode) {
+                                "blue" -> WidgetSettings.ColorMode.BLUE
+                                "dark" -> WidgetSettings.ColorMode.DARK
+                                else   -> WidgetSettings.ColorMode.AUTO
+                            }
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        else -> result.notImplemented()
+                    }
+                }
             }
         }
     }
