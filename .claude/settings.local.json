@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs cat:*)",
+      "Bash(flutter run:*)",
+      "Bash(flutter pub:*)",
+      "Bash(flutter build:*)",
+      "Bash(adb -s R3CX10P3R8V install -r \"build/app/outputs/flutter-apk/app-debug.apk\")",
+      "Bash(\"/c/Users/Usuario/AppData/Local/Android/sdk/platform-tools/adb.exe\" -s R3CX10P3R8V install -r \"C:/Codigos/AndroidVolume/.claude/worktrees/nice-zhukovsky/build/app/outputs/flutter-apk/app-debug.apk\")",
+      "Bash(\"/c/Users/Usuario/AppData/Local/Android/sdk/platform-tools/adb.exe\" devices:*)",
+      "Bash(flutter install:*)",
+      "Bash(gh pr create --title 'Style selector, animated styles, volume indicator & UX improvements' --body ':*)",
+      "Bash(\"/c/Users/Usuario/AppData/Local/Android/sdk/platform-tools/adb.exe\" -s R3CX10P3R8V install -r \"C:\\\\Codigos\\\\AndroidVolume\\\\.claude\\\\worktrees\\\\nice-zhukovsky\\\\build\\\\app\\\\outputs\\\\flutter-apk\\\\app-debug.apk\")",
+      "Bash(\"/c/Users/Usuario/AppData/Local/Android/sdk/platform-tools/adb.exe\" install:*)",
+      "Bash(flutter devices:*)",
+      "Bash(adb devices:*)",
+      "Bash(flutter doctor:*)"
+    ]
+  }
+}
