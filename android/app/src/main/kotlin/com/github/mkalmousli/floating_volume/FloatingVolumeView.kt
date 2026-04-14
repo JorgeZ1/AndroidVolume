@@ -23,6 +23,7 @@ class FloatingVolumeView(context: Context) : LinearLayout(context) {
 
     private val plusBtn  = buildButton(plusLabel)
     private val minusBtn = buildButton(minusLabel)
+    private val gapView  = View(context).apply { setBackgroundColor(Color.TRANSPARENT) }
 
     val handleIv: View get() = this
 
@@ -33,12 +34,9 @@ class FloatingVolumeView(context: Context) : LinearLayout(context) {
         gravity     = Gravity.CENTER_HORIZONTAL
         setBackgroundColor(Color.TRANSPARENT)
 
-        val size = dp(52)
-        val gap  = dp(10)
-
-        addView(plusBtn,  LayoutParams(size, size))
-        addView(View(context).apply { setBackgroundColor(Color.TRANSPARENT) }, LayoutParams(size, gap))
-        addView(minusBtn, LayoutParams(size, size))
+        addView(plusBtn)
+        addView(gapView)
+        addView(minusBtn)
 
         applyTheme()
     }
@@ -51,6 +49,12 @@ class FloatingVolumeView(context: Context) : LinearLayout(context) {
 
     fun applyTheme() {
         currentApplier?.stopAnimation()
+
+        val size = dp(WidgetSettings.buttonSize)
+        val gap  = dp(WidgetSettings.buttonGap)
+        plusBtn.layoutParams  = LayoutParams(size, size)
+        gapView.layoutParams  = LayoutParams(size, gap)
+        minusBtn.layoutParams = LayoutParams(size, size)
 
         val applier = StyleFactory.create(
             style     = WidgetSettings.style,

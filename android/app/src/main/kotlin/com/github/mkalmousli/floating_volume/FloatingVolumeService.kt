@@ -207,9 +207,9 @@ class FloatingVolumeService : Service() {
         val screenW  = resources.displayMetrics.widthPixels
         val widgetW  = floatingMuteView.width.takeIf { it > 0 } ?: dp(64)
         val widgetH  = floatingMuteView.height.takeIf { it > 0 } ?: dp(140)
-        val indW     = dp(VolumeIndicatorView.VIEW_W_DP)
-        val indH     = dp(VolumeIndicatorView.VIEW_H_DP)
-        val gap      = dp(10)
+        val indW     = dp(WidgetSettings.indicatorWidth)
+        val indH     = dp(WidgetSettings.indicatorHeight)
+        val gap      = dp(WidgetSettings.indicatorGap)
 
         val isOnRight = layoutParams.x + widgetW / 2 > screenW / 2
         val indX = if (isOnRight)
@@ -242,10 +242,10 @@ class FloatingVolumeService : Service() {
             windowManager.updateViewLayout(volumeIndicatorView, indicatorParams)
         }
 
-        // Auto-hide after 1.8 s; reset timer if pressed again
+        // Auto-hide after configurable delay; reset timer if pressed again
         hideIndicatorJob?.cancel()
         hideIndicatorJob = newInMain {
-            kotlinx.coroutines.delay(1800)
+            kotlinx.coroutines.delay(WidgetSettings.indicatorHideDelay.toLong())
             hideVolumeIndicator()
         }
     }

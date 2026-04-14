@@ -124,6 +124,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
             WidgetSettings.Style.RGB_NEON      -> applyRgbNeon()
             WidgetSettings.Style.COSMIC        -> applyCosmic()
             WidgetSettings.Style.LAVA          -> applyLava()
+            WidgetSettings.Style.CARDS         -> applyCards(isDark)
         }
     }
 
@@ -303,6 +304,17 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
             }
             start()
         }
+    }
+
+    private fun applyCards(isDark: Boolean) {
+        val card  = if (isDark) Color.parseColor("#2C2C2E") else Color.WHITE
+        val track = if (isDark) Color.parseColor("#48484A") else Color.parseColor("#E0E0E0")
+        val fill  = if (isDark) Color.WHITE else Color.parseColor("#1A1A1A")
+        val text  = if (isDark) Color.WHITE else Color.parseColor("#1A1A1A")
+        apply(card, track, fill, text)
+        cardBg.cornerRadius  = dp(12).toFloat()
+        trackBg.cornerRadius = dp(3).toFloat()
+        fillBg.cornerRadius  = dp(3).toFloat()
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

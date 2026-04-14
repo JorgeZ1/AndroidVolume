@@ -19,5 +19,6 @@ object StyleFactory {
         WidgetSettings.Style.RGB_NEON       -> RgbNeonStyleApplier()
         WidgetSettings.Style.COSMIC         -> CosmicStyleApplier()
         WidgetSettings.Style.LAVA           -> LavaStyleApplier()
+        WidgetSettings.Style.CARDS          -> CardsStyleApplier(isNight)
     }
 }

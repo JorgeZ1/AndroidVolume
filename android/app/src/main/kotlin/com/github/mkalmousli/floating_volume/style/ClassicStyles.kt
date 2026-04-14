@@ -127,3 +127,22 @@ class OneUiStyleApplier : ButtonStyleApplier {
             teal, dp(3))
     }
 }
+
+// ── Cards ─────────────────────────────────────────────────────────────────────
+// Clean material-card look: white/dark surface, strong shadow, rounded corners.
+
+class CardsStyleApplier(private val isNight: Boolean) : ButtonStyleApplier {
+
+    override fun apply(
+        plusBtn: View, minusBtn: View,
+        plusLabel: TextView, minusLabel: TextView,
+        dp: (Number) -> Int,
+    ) {
+        val bgColor   = if (isNight) Color.parseColor("#2C2C2E") else Color.WHITE
+        val iconColor = if (isNight) Color.WHITE else Color.parseColor("#1A1A1A")
+        val corner    = dp(14).toFloat()
+        applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
+            { roundRectDrawable(bgColor, corner) },
+            iconColor, dp(8))
+    }
+}
