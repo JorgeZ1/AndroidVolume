@@ -179,6 +179,12 @@ class MainActivity : FlutterActivity() {
                             WidgetSettings.save(sharedPrefs)
                             result.success(null)
                         }
+                        "setStyle" -> {
+                            val s = call.argument<String>("style") ?: "android"
+                            WidgetSettings.style = WidgetSettings.Style.fromName(s)
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
                         else -> result.notImplemented()
                     }
                 }

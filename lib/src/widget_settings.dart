@@ -2,6 +2,18 @@ import 'package:flutter/services.dart';
 
 enum WidgetColorMode { auto, blue, dark }
 
+enum WidgetStyle {
+  android,
+  android12,
+  ios,
+  miui,
+  samsungOneUi,
+  rgbAurora,
+  rgbNeon,
+  cosmic,
+  lava,
+}
+
 class WidgetSettings {
   WidgetSettings._();
 
@@ -9,6 +21,7 @@ class WidgetSettings {
 
   static double opacity = 1.0;
   static WidgetColorMode colorMode = WidgetColorMode.auto;
+  static WidgetStyle style = WidgetStyle.android;
 
   static Future<void> setOpacity(double value) async {
     opacity = value;
@@ -24,5 +37,10 @@ class WidgetSettings {
         WidgetColorMode.auto => 'auto',
       },
     });
+  }
+
+  static Future<void> setWidgetStyle(WidgetStyle s) async {
+    style = s;
+    await _ch.invokeMethod('setStyle', {'style': s.name});
   }
 }

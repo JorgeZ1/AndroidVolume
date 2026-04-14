@@ -57,7 +57,10 @@ class FloatingVolumeService : Service() {
     }
 
     private fun onSettingsChanged() {
-        newInMain { floatingMuteView.applyTheme() }
+        newInMain {
+            floatingMuteView.applyTheme()
+            volumeIndicatorView?.applyStyle()
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -203,8 +206,8 @@ class FloatingVolumeService : Service() {
         val screenW  = resources.displayMetrics.widthPixels
         val widgetW  = floatingMuteView.width.takeIf { it > 0 } ?: dp(64)
         val widgetH  = floatingMuteView.height.takeIf { it > 0 } ?: dp(140)
-        val indW     = dp(76)
-        val indH     = dp(180)
+        val indW     = dp(VolumeIndicatorView.VIEW_W_DP)
+        val indH     = dp(VolumeIndicatorView.VIEW_H_DP)
         val gap      = dp(10)
 
         val isOnRight = layoutParams.x + widgetW / 2 > screenW / 2
@@ -215,7 +218,7 @@ class FloatingVolumeService : Service() {
         val indY = (layoutParams.y + widgetH / 2 - indH / 2).coerceAtLeast(dp(8))
 
         if (volumeIndicatorView == null) {
-            volumeIndicatorView = VolumeIndicatorView(this)
+            volumeIndicatorView = VolumeIndicatorView(this).also { it.applyStyle() }
             indicatorParams = LayoutParams(
                 indW, indH,
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)

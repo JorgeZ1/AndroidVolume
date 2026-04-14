@@ -1,18 +1,20 @@
 package com.github.mkalmousli.floating_volume
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
+import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 
 /**
- * A small floating volume indicator that appears beside the main widget.
- * Shows a vertical fill bar + current volume number + stream icon.
+ * Small floating volume indicator shown beside the buttons when volume changes.
+ * Automatically adapts its visual style to [WidgetSettings.style].
  */
 class VolumeIndicatorView(context: Context) : LinearLayout(context) {
 
@@ -20,78 +22,78 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
 
     // ── Drawables ────────────────────────────────────────────────────────────
 
-    private val cardBg = GradientDrawable().apply {
-        shape  = GradientDrawable.RECTANGLE
-        cornerRadius = dp(20).toFloat()
+    private val cardBg  = GradientDrawable().apply {
+        shape        = GradientDrawable.RECTANGLE
+        cornerRadius = dp(18).toFloat()
     }
-
     private val trackBg = GradientDrawable().apply {
-        shape  = GradientDrawable.RECTANGLE
+        shape        = GradientDrawable.RECTANGLE
         cornerRadius = dp(3).toFloat()
     }
-
-    private val fillBg = GradientDrawable().apply {
-        shape  = GradientDrawable.RECTANGLE
+    private val fillBg  = GradientDrawable().apply {
+        shape        = GradientDrawable.RECTANGLE
         cornerRadius = dp(3).toFloat()
     }
 
     // ── Child views ───────────────────────────────────────────────────────────
 
     private val numberLabel = TextView(context).apply {
-        textSize = 13f
+        textSize = 11f
         typeface = Typeface.DEFAULT_BOLD
         gravity  = Gravity.CENTER
     }
 
-    /** Invisible spacer track; fill is overlaid on top */
-    private val trackView = android.view.View(context).apply {
-        background = trackBg
-    }
-
-    private val fillView = android.view.View(context)
+    private val trackView = android.view.View(context).apply { background = trackBg }
+    private val fillView  = android.view.View(context).apply { background = fillBg }
 
     private val iconLabel = TextView(context).apply {
         text     = "♪"
-        textSize = 14f
+        textSize = 12f
         gravity  = Gravity.CENTER
     }
 
     // ── State ─────────────────────────────────────────────────────────────────
 
-    private var currentFraction = 0f   // 0..1
+    private var currentFraction = 0f
+    private var fillAnimator: ValueAnimator? = null
+
+    companion object {
+        // Match these with showVolumeIndicator() in FloatingVolumeService
+        const val VIEW_W_DP = 48
+        const val VIEW_H_DP = 160
+        private const val TRACK_H_DP = 72
+    }
 
     init {
         orientation = VERTICAL
         gravity     = Gravity.CENTER_HORIZONTAL
         background  = cardBg
-        setPadding(dp(8), dp(10), dp(8), dp(10))
+        setPadding(dp(6), dp(8), dp(6), dp(8))
+        elevation   = 0f  // no shadow — keep it clean
 
-        val w = dp(44)
+        val w = dp(36)
 
         addView(numberLabel, LayoutParams(w, LayoutParams.WRAP_CONTENT))
-        addView(android.view.View(context), LayoutParams(w, dp(6))) // spacer
+        addView(android.view.View(context), LayoutParams(w, dp(4))) // spacer
 
         // Track + fill stacked in a FrameLayout
         val trackFrame = FrameLayout(context)
-        val trackW = dp(4)  // thinner track
-        val trackH = dp(80)
+        val trackW = dp(4)
+        val trackH = dp(TRACK_H_DP)
 
-        trackView.background = trackBg
         trackFrame.addView(trackView, FrameLayout.LayoutParams(trackW, trackH).also {
             it.gravity = Gravity.CENTER_HORIZONTAL
         })
-
-        fillView.background = fillBg
         trackFrame.addView(fillView, FrameLayout.LayoutParams(trackW, 0).also {
             it.gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
         })
 
         addView(trackFrame, LayoutParams(w, trackH))
 
-        addView(android.view.View(context), LayoutParams(w, dp(6))) // spacer
+        addView(android.view.View(context), LayoutParams(w, dp(4))) // spacer
         addView(iconLabel, LayoutParams(w, LayoutParams.WRAP_CONTENT))
 
-        applyTheme()
+        applyStyle()
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -99,41 +101,201 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
     fun update(volume: Int, maxVolume: Int) {
         currentFraction = if (maxVolume > 0) volume / maxVolume.toFloat() else 0f
         numberLabel.text = volume.toString()
-
-        // Update fill height inside its FrameLayout parent
-        val lp = fillView.layoutParams as FrameLayout.LayoutParams
-        lp.height = (dp(80) * currentFraction).toInt().coerceAtLeast(dp(2))
-        fillView.layoutParams = lp
-        fillView.requestLayout()
+        updateFill()
     }
 
-    fun applyTheme() {
+    /** Call whenever [WidgetSettings] changes (color mode, style, opacity). */
+    fun applyStyle() {
+        stopFillAnimation()
+
         val isDark = resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 
-        val cardColor  = if (isDark) Color.parseColor("#1C1C1E") else Color.WHITE
-        val trackColor = if (isDark) Color.parseColor("#3A3A3C") else Color.parseColor("#E0E0E0")
-        val fillColor  = Color.parseColor("#2979FF")
-        val textColor  = if (isDark) Color.WHITE else Color.parseColor("#2979FF")
-        val iconAlpha  = if (isDark) 180 else 160
-
-        cardBg.setColor(cardColor)
-        trackBg.setColor(trackColor)
-        fillBg.setColor(fillColor)
-        numberLabel.setTextColor(textColor)
-        iconLabel.setTextColor(applyAlpha(textColor, iconAlpha))
-
-        // Subtle elevation shadow via outline provider is not needed — card bg is enough
+        when (WidgetSettings.style) {
+            WidgetSettings.Style.ANDROID       -> applyAndroid(isDark)
+            WidgetSettings.Style.ANDROID_12    -> applyAndroid12()
+            WidgetSettings.Style.IOS           -> applyIos()
+            WidgetSettings.Style.MIUI          -> applyMiui()
+            WidgetSettings.Style.SAMSUNG_ONE_UI -> applyOneUi()
+            WidgetSettings.Style.RGB_AURORA    -> applyRgbAurora()
+            WidgetSettings.Style.RGB_NEON      -> applyRgbNeon()
+            WidgetSettings.Style.COSMIC        -> applyCosmic()
+            WidgetSettings.Style.LAVA          -> applyLava()
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        applyTheme()
+        applyStyle()
+    }
+
+    // ── Style implementations ─────────────────────────────────────────────────
+
+    private fun applyAndroid(isDark: Boolean) {
+        val card  = if (isDark) Color.parseColor("#1C1C1E") else Color.WHITE
+        val track = if (isDark) Color.parseColor("#3A3A3C") else Color.parseColor("#E0E0E0")
+        val fill  = Color.parseColor("#2979FF")
+        val text  = if (isDark) Color.WHITE else Color.parseColor("#2979FF")
+        apply(card, track, fill, text)
+    }
+
+    private fun applyAndroid12() {
+        apply(
+            card  = Color.parseColor("#2979FF"),
+            track = Color.parseColor("#1555CC"),
+            fill  = Color.WHITE,
+            text  = Color.WHITE,
+        )
+        fillBg.cornerRadius  = dp(3).toFloat()
+        trackBg.cornerRadius = dp(3).toFloat()
+    }
+
+    private fun applyIos() {
+        // Translucent frosted-glass look
+        cardBg.setColor(Color.argb(55, 255, 255, 255))
+        cardBg.setStroke(dp(1), Color.argb(70, 255, 255, 255))
+        trackBg.setColor(Color.argb(50, 255, 255, 255))
+        fillBg.setColor(Color.WHITE)
+        numberLabel.setTextColor(Color.WHITE)
+        iconLabel.setTextColor(Color.argb(180, 255, 255, 255))
+    }
+
+    private fun applyMiui() {
+        val orange = Color.parseColor("#FF6900")
+        cardBg.setColor(Color.argb(40, 30, 30, 30))
+        cardBg.setStroke(dp(1), Color.argb(160, 255, 105, 0))
+        trackBg.setColor(Color.argb(50, 255, 255, 255))
+        fillBg.setColor(orange)
+        numberLabel.setTextColor(orange)
+        iconLabel.setTextColor(Color.argb(180, 255, 105, 0))
+    }
+
+    private fun applyOneUi() {
+        val teal = Color.parseColor("#1DB3A8")
+        cardBg.setColor(Color.argb(50, 20, 20, 25))
+        cardBg.setStroke(0, Color.TRANSPARENT)
+        trackBg.setColor(Color.argb(60, 255, 255, 255))
+        fillBg.setColor(teal)
+        numberLabel.setTextColor(teal)
+        iconLabel.setTextColor(Color.argb(180, 29, 179, 168))
+    }
+
+    private fun applyRgbAurora() {
+        cardBg.setColor(Color.parseColor("#12001A"))
+        cardBg.setStroke(0, Color.TRANSPARENT)
+        trackBg.setColor(Color.argb(60, 255, 255, 255))
+        fillBg.setColor(Color.parseColor("#7B00FF"))
+        numberLabel.setTextColor(Color.WHITE)
+        iconLabel.setTextColor(Color.argb(200, 255, 255, 255))
+
+        // Animate fill through rainbow hues
+        fillAnimator = ValueAnimator.ofFloat(0f, 360f).apply {
+            duration     = 3_000L
+            repeatCount  = ValueAnimator.INFINITE
+            repeatMode   = ValueAnimator.RESTART
+            interpolator = LinearInterpolator()
+            addUpdateListener { anim ->
+                val hue = anim.animatedValue as Float
+                fillBg.setColor(Color.HSVToColor(floatArrayOf(hue, 0.9f, 1f)))
+            }
+            start()
+        }
+    }
+
+    private fun applyRgbNeon() {
+        cardBg.setColor(Color.BLACK)
+        cardBg.setStroke(dp(2), Color.parseColor("#00FFFF"))
+        trackBg.setColor(Color.argb(40, 255, 255, 255))
+        fillBg.setColor(Color.parseColor("#00FFFF"))
+        numberLabel.setTextColor(Color.parseColor("#00FFFF"))
+        iconLabel.setTextColor(Color.argb(200, 0, 255, 255))
+
+        // Pulse border and fill between cyan and magenta
+        fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration    = 2_000L
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode  = ValueAnimator.REVERSE
+            addUpdateListener { anim ->
+                val t       = anim.animatedValue as Float
+                val cyan    = lerpColor(0xFF00FFFF.toInt(), 0xFF00B4FF.toInt(), t)
+                val magenta = lerpColor(0xFFFF00FF.toInt(), 0xFFFF0090.toInt(), t)
+                cardBg.setStroke(dp(2), cyan)
+                fillBg.setColor(magenta)
+                numberLabel.setTextColor(cyan)
+            }
+            start()
+        }
+    }
+
+    private fun applyCosmic() {
+        cardBg.setColor(Color.parseColor("#0D0221"))
+        cardBg.setStroke(dp(1), Color.parseColor("#9B5DE5"))
+        trackBg.setColor(Color.argb(60, 155, 93, 229))
+        fillBg.setColor(Color.parseColor("#9B5DE5"))
+        numberLabel.setTextColor(Color.parseColor("#FFD700"))
+        iconLabel.setTextColor(Color.argb(200, 155, 93, 229))
+
+        // Pulse fill between purple and gold
+        fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration    = 1_500L
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode  = ValueAnimator.REVERSE
+            addUpdateListener { anim ->
+                val t = anim.animatedValue as Float
+                fillBg.setColor(lerpColor(0xFF9B5DE5.toInt(), 0xFFFFD700.toInt(), t))
+            }
+            start()
+        }
+    }
+
+    private fun applyLava() {
+        cardBg.setColor(Color.parseColor("#1A0000"))
+        cardBg.setStroke(dp(1), Color.parseColor("#FF4500"))
+        trackBg.setColor(Color.argb(50, 100, 0, 0))
+        fillBg.setColor(Color.parseColor("#FF4500"))
+        numberLabel.setTextColor(Color.parseColor("#FFD700"))
+        iconLabel.setTextColor(Color.argb(200, 255, 69, 0))
+
+        // Flicker fill between dark lava and bright fire tip
+        fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration    = 900L
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode  = ValueAnimator.REVERSE
+            addUpdateListener { anim ->
+                val t = anim.animatedValue as Float
+                fillBg.setColor(lerpColor(0xFFFF4500.toInt(), 0xFFFFD700.toInt(), t))
+            }
+            start()
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private fun applyAlpha(color: Int, alpha: Int): Int {
-        return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
+    private fun apply(card: Int, track: Int, fill: Int, text: Int) {
+        cardBg.setColor(card)
+        cardBg.setStroke(0, Color.TRANSPARENT)
+        trackBg.setColor(track)
+        fillBg.setColor(fill)
+        numberLabel.setTextColor(text)
+        iconLabel.setTextColor(withAlpha(text, 160))
+    }
+
+    private fun updateFill() {
+        val lp = fillView.layoutParams as FrameLayout.LayoutParams
+        lp.height = (dp(TRACK_H_DP) * currentFraction).toInt().coerceAtLeast(dp(2))
+        fillView.layoutParams = lp
+        fillView.requestLayout()
+    }
+
+    private fun stopFillAnimation() { fillAnimator?.cancel(); fillAnimator = null }
+
+    private fun withAlpha(color: Int, alpha: Int) =
+        Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
+
+    private fun lerpColor(from: Int, to: Int, t: Float): Int {
+        val r = (Color.red(from)   + t * (Color.red(to)   - Color.red(from))).toInt()
+        val g = (Color.green(from) + t * (Color.green(to) - Color.green(from))).toInt()
+        val b = (Color.blue(from)  + t * (Color.blue(to)  - Color.blue(from))).toInt()
+        return Color.rgb(r, g, b)
     }
 }

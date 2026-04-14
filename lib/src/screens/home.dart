@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:floating_volume/src/widget_settings.dart';
@@ -20,6 +21,38 @@ import 'package:floating_volume/src/bloc/theme/event.dart' as etheme;
 
 const _kBlue = Color(0xFF2979FF);
 
+// ---------------------------------------------------------------------------
+// Style metadata — label and preview widget per style
+// ---------------------------------------------------------------------------
+extension WidgetStyleExt on WidgetStyle {
+  String get label => switch (this) {
+        WidgetStyle.android      => 'Android',
+        WidgetStyle.android12    => 'Android 12',
+        WidgetStyle.ios          => 'iOS',
+        WidgetStyle.miui         => 'MIUI',
+        WidgetStyle.samsungOneUi => 'One UI',
+        WidgetStyle.rgbAurora    => 'RGB Aurora',
+        WidgetStyle.rgbNeon      => 'RGB Neon',
+        WidgetStyle.cosmic       => 'Cosmic',
+        WidgetStyle.lava         => 'Lava',
+      };
+
+  Widget get preview => switch (this) {
+        WidgetStyle.android      => const _AndroidStylePreview(),
+        WidgetStyle.android12    => const _Android12StylePreview(),
+        WidgetStyle.ios          => const _IosStylePreview(),
+        WidgetStyle.miui         => const _MiuiStylePreview(),
+        WidgetStyle.samsungOneUi => const _SamsungOneUiPreview(),
+        WidgetStyle.rgbAurora    => const _RgbAuroraPreview(),
+        WidgetStyle.rgbNeon      => const _RgbNeonPreview(),
+        WidgetStyle.cosmic       => const _CosmicPreview(),
+        WidgetStyle.lava         => const _LavaPreview(),
+      };
+}
+
+// ---------------------------------------------------------------------------
+// HomeScreen
+// ---------------------------------------------------------------------------
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -44,7 +77,7 @@ class HomeScreen extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Permissions view — shown until required permissions are granted
+// Permissions view
 // ---------------------------------------------------------------------------
 class _PermissionsView extends StatelessWidget {
   const _PermissionsView();
@@ -167,10 +200,45 @@ class _PermissionRow extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Main view — shown after required permissions are granted
+// Main view — stateful to persist/restore selected style
 // ---------------------------------------------------------------------------
-class _MainView extends StatelessWidget {
+class _MainView extends StatefulWidget {
   const _MainView();
+
+  @override
+  State<_MainView> createState() => _MainViewState();
+}
+
+class _MainViewState extends State<_MainView> {
+  WidgetStyle _selectedStyle = WidgetStyle.android;
+  bool _styleLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStyle();
+  }
+
+  Future<void> _loadStyle() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('widget_style');
+    final style = WidgetStyle.values.where((s) => s.name == name).firstOrNull
+        ?? WidgetStyle.android;
+    if (mounted) {
+      setState(() {
+        _selectedStyle = style;
+        _styleLoaded = true;
+      });
+      await WidgetSettings.setWidgetStyle(style);
+    }
+  }
+
+  Future<void> _selectStyle(WidgetStyle style) async {
+    setState(() => _selectedStyle = style);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('widget_style', style.name);
+    await WidgetSettings.setWidgetStyle(style);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -233,26 +301,50 @@ class _MainView extends StatelessWidget {
           const Gap(24),
 
           // ── Style selector ───────────────────────────────────────────────
-          _SectionLabel('Seleccionar estilo'),
+          _SectionLabel('Estilos de Sistema Clásicos'),
           const Gap(12),
           SizedBox(
             height: 190,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: const [
-                _StyleCard(
-                  label: 'Android',
-                  selected: true,
-                  preview: _AndroidStylePreview(),
-                ),
-                Gap(12),
-                _StyleCard(
-                  label: 'Android 12',
-                  selected: false,
-                  preview: _Android12StylePreview(),
-                ),
-              ],
-            ),
+            child: _styleLoaded
+                ? ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: 5, // classic styles
+                    separatorBuilder: (_, __) => const Gap(12),
+                    itemBuilder: (context, index) {
+                      final style = WidgetStyle.values[index];
+                      return _StyleCard(
+                        label: style.label,
+                        selected: _selectedStyle == style,
+                        preview: style.preview,
+                        onTap: () => _selectStyle(style),
+                      );
+                    },
+                  )
+                : const Center(child: CircularProgressIndicator()),
+          ),
+
+          const Gap(20),
+
+          _SectionLabel('🌟 Estilos Especiales y Creativos'),
+          const Gap(12),
+          SizedBox(
+            height: 190,
+            child: _styleLoaded
+                ? ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: 4, // rgbAurora, rgbNeon, cosmic, lava
+                    separatorBuilder: (_, __) => const Gap(12),
+                    itemBuilder: (context, index) {
+                      final style = WidgetStyle.values[5 + index];
+                      return _StyleCard(
+                        label: style.label,
+                        selected: _selectedStyle == style,
+                        preview: style.preview,
+                        onTap: () => _selectStyle(style),
+                      );
+                    },
+                  )
+                : const Center(child: CircularProgressIndicator()),
           ),
 
           const Gap(24),
@@ -327,62 +419,84 @@ class _MainView extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Style cards
+// Style card — tappable, animated selection border
 // ---------------------------------------------------------------------------
 class _StyleCard extends StatelessWidget {
   final String label;
   final bool selected;
   final Widget preview;
+  final VoidCallback onTap;
 
   const _StyleCard({
     required this.label,
     required this.selected,
     required this.preview,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: 148,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: selected ? _kBlue : cs.outlineVariant,
-          width: selected ? 2 : 1,
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-              child: preview,
-            ),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        width: 148,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1C1E),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? _kBlue : cs.outlineVariant,
+            width: selected ? 2.5 : 1,
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: selected ? _kBlue : Colors.white70,
-                fontSize: 13,
+          boxShadow: selected
+              ? [BoxShadow(color: _kBlue.withAlpha(80), blurRadius: 10, spreadRadius: 1)]
+              : [],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+                child: preview,
               ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (selected) ...[
+                    const Icon(Icons.check_circle_rounded, size: 13, color: _kBlue),
+                    const Gap(4),
+                  ],
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: selected ? _kBlue : Colors.white70,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// Android style preview: two white circles + slim white slider
+// ===========================================================================
+// Style Previews — Classic
+// ===========================================================================
+
+// ── Android ─────────────────────────────────────────────────────────────────
 class _AndroidStylePreview extends StatelessWidget {
   const _AndroidStylePreview();
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -404,10 +518,9 @@ class _AndroidStylePreview extends StatelessWidget {
   }
 }
 
-// Android 12 style preview: two blue circles + fat blue pill slider
+// ── Android 12 ──────────────────────────────────────────────────────────────
 class _Android12StylePreview extends StatelessWidget {
   const _Android12StylePreview();
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -429,11 +542,546 @@ class _Android12StylePreview extends StatelessWidget {
   }
 }
 
+// ── iOS ─────────────────────────────────────────────────────────────────────
+class _IosStylePreview extends StatelessWidget {
+  const _IosStylePreview();
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 44,
+          height: 110,
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(30),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: Colors.white.withAlpha(60), width: 1),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Column(
+                    children: [
+                      Container(height: 18, color: Colors.white.withAlpha(200)),
+                      Container(height: 34, color: Colors.white.withAlpha(40)),
+                    ],
+                  ),
+                ),
+              ),
+              Icon(Icons.volume_up_rounded, color: Colors.white.withAlpha(200), size: 16),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── MIUI ────────────────────────────────────────────────────────────────────
+class _MiuiStylePreview extends StatelessWidget {
+  const _MiuiStylePreview();
+  static const _orange = Color(0xFFFF6900);
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _MiuiButton(label: '+', accent: _orange),
+            const Gap(8),
+            _MiuiButton(label: '−', accent: _orange),
+          ],
+        ),
+        const Gap(10),
+        Container(
+          width: 8,
+          height: 80,
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(40),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Container(
+                height: 30,
+                decoration: BoxDecoration(
+                  color: _orange,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiuiButton extends StatelessWidget {
+  final String label;
+  final Color accent;
+  const _MiuiButton({required this.label, required this.accent});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(15),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withAlpha(180), width: 1.5),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: TextStyle(color: accent, fontSize: 22, fontWeight: FontWeight.bold, height: 1),
+      ),
+    );
+  }
+}
+
+// ── Samsung One UI ──────────────────────────────────────────────────────────
+class _SamsungOneUiPreview extends StatelessWidget {
+  const _SamsungOneUiPreview();
+  static const _teal = Color(0xFF1DB3A8);
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _OneUiButton(icon: Icons.add_rounded, accent: _teal),
+            const Gap(8),
+            _OneUiButton(icon: Icons.remove_rounded, accent: _teal),
+          ],
+        ),
+        const Gap(10),
+        Container(
+          width: 32,
+          height: 100,
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(20),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                height: 55,
+                decoration: BoxDecoration(
+                  color: _teal.withAlpha(200),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Icon(Icons.volume_up_rounded, size: 14, color: Colors.white.withAlpha(220)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OneUiButton extends StatelessWidget {
+  final IconData icon;
+  final Color accent;
+  const _OneUiButton({required this.icon, required this.accent});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(18),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: accent, size: 22),
+    );
+  }
+}
+
+// ===========================================================================
+// Style Previews — Animated (Special)
+// ===========================================================================
+
+// ── RGB Aurora ──────────────────────────────────────────────────────────────
+class _RgbAuroraPreview extends StatefulWidget {
+  const _RgbAuroraPreview();
+  @override
+  State<_RgbAuroraPreview> createState() => _RgbAuroraPreviewState();
+}
+
+class _RgbAuroraPreviewState extends State<_RgbAuroraPreview>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final hue = (_ctrl.value * 360) % 360;
+        final c1 = HSVColor.fromAHSV(1, hue, 0.9, 1).toColor();
+        final c2 = HSVColor.fromAHSV(1, (hue + 120) % 360, 0.9, 1).toColor();
+        final c3 = HSVColor.fromAHSV(1, (hue + 240) % 360, 0.9, 1).toColor();
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _GradientCircle(label: '+', colors: [c1, c2]),
+                const Gap(10),
+                _GradientCircle(label: '−', colors: [c2, c3]),
+              ],
+            ),
+            const Gap(10),
+            Container(
+              width: 12,
+              height: 90,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [c1, c2, c3],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// Shared gradient circle used by Aurora, Cosmic, and Lava previews
+class _GradientCircle extends StatelessWidget {
+  final String label;
+  final List<Color> colors;
+  final AlignmentGeometry begin;
+  final AlignmentGeometry end;
+  const _GradientCircle({
+    required this.label,
+    required this.colors,
+    this.begin = Alignment.topLeft,
+    this.end   = Alignment.bottomRight,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(colors: colors, begin: begin, end: end),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
+// ── RGB Neon ────────────────────────────────────────────────────────────────
+class _RgbNeonPreview extends StatefulWidget {
+  const _RgbNeonPreview();
+  @override
+  State<_RgbNeonPreview> createState() => _RgbNeonPreviewState();
+}
+
+class _RgbNeonPreviewState extends State<_RgbNeonPreview>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))
+      ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final cyan =
+            Color.lerp(const Color(0xFF00FFFF), const Color(0xFF00B4FF), _ctrl.value)!;
+        final magenta =
+            Color.lerp(const Color(0xFFFF00FF), const Color(0xFFFF0090), _ctrl.value)!;
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _NeonButton(label: '+', glowColor: cyan),
+                const Gap(10),
+                _NeonButton(label: '−', glowColor: magenta),
+              ],
+            ),
+            const Gap(10),
+            Container(
+              width: 14,
+              height: 90,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(7),
+                border: Border.all(color: cyan.withAlpha(200), width: 1.5),
+                boxShadow: [BoxShadow(color: cyan.withAlpha(120), blurRadius: 8)],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    height: 45,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [magenta, cyan],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _NeonButton extends StatelessWidget {
+  final String label;
+  final Color glowColor;
+  const _NeonButton({required this.label, required this.glowColor});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        shape: BoxShape.circle,
+        border: Border.all(color: glowColor, width: 2),
+        boxShadow: [
+          BoxShadow(color: glowColor.withAlpha(180), blurRadius: 10, spreadRadius: 1)
+        ],
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: glowColor,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Cosmic ───────────────────────────────────────────────────────────────────
+// Deep-space gradient that morphs between space-blue, purple, and gold.
+class _CosmicPreview extends StatefulWidget {
+  const _CosmicPreview();
+  @override
+  State<_CosmicPreview> createState() => _CosmicPreviewState();
+}
+
+class _CosmicPreviewState extends State<_CosmicPreview>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  static const _spaceBlue = Color(0xFF0D1B69);
+  static const _purple    = Color(0xFF9B5DE5);
+  static const _deepPurple = Color(0xFF5B10A0);
+  static const _gold      = Color(0xFFFFD700);
+  static const _orange    = Color(0xFFFF8C00);
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))
+      ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final t  = _ctrl.value;
+        final c1 = Color.lerp(_spaceBlue, const Color(0xFF1A0A3F), t)!;
+        final c2 = Color.lerp(_purple, _deepPurple, t)!;
+        final c3 = Color.lerp(_gold, _orange, t)!;
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _GradientCircle(label: '+', colors: [c1, c2]),
+                const Gap(10),
+                _GradientCircle(label: '−', colors: [c2, c3]),
+              ],
+            ),
+            const Gap(10),
+            Container(
+              width: 12,
+              height: 90,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [c3, c2, c1],
+                ),
+                boxShadow: [
+                  BoxShadow(color: c2.withAlpha(120), blurRadius: 10),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ── Lava ─────────────────────────────────────────────────────────────────────
+// Molten lava: dark crimson → lava orange → fire tip with heat shimmer.
+class _LavaPreview extends StatefulWidget {
+  const _LavaPreview();
+  @override
+  State<_LavaPreview> createState() => _LavaPreviewState();
+}
+
+class _LavaPreviewState extends State<_LavaPreview>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+      ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        final t      = _ctrl.value;
+        final dark   = Color.lerp(const Color(0xFF3D0000), const Color(0xFF6B0000), t)!;
+        final mid    = Color.lerp(const Color(0xFFFF4500), const Color(0xFFFF6A00), t)!;
+        final bright = Color.lerp(const Color(0xFFFF8C00), const Color(0xFFFFD700), t)!;
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _GradientCircle(
+                  label: '+', colors: [dark, mid],
+                  begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                ),
+                const Gap(10),
+                _GradientCircle(
+                  label: '−', colors: [mid, bright],
+                  begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                ),
+              ],
+            ),
+            const Gap(10),
+            Container(
+              width: 12,
+              height: 90,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [dark, mid, bright],
+                ),
+                boxShadow: [
+                  BoxShadow(color: mid.withAlpha(150), blurRadius: 10),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ===========================================================================
+// Shared preview sub-widgets
+// ===========================================================================
 class _PreviewCircle extends StatelessWidget {
   final String label;
   final Color bg;
   final Color fg;
-
   const _PreviewCircle({required this.label, required this.bg, required this.fg});
 
   @override
@@ -445,18 +1093,12 @@ class _PreviewCircle extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         label,
-        style: TextStyle(
-          color: fg,
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-          height: 1,
-        ),
+        style: TextStyle(color: fg, fontSize: 22, fontWeight: FontWeight.bold, height: 1),
       ),
     );
   }
 }
 
-// Slim white pill with blue thumb + music note
 class _SlimSliderPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -483,8 +1125,7 @@ class _SlimSliderPreview extends StatelessWidget {
             child: Container(
               width: 14,
               height: 14,
-              decoration:
-                  const BoxDecoration(color: _kBlue, shape: BoxShape.circle),
+              decoration: const BoxDecoration(color: _kBlue, shape: BoxShape.circle),
             ),
           ),
           const Positioned(
@@ -497,7 +1138,6 @@ class _SlimSliderPreview extends StatelessWidget {
   }
 }
 
-// Fat blue pill with music note (Android 12 style)
 class _FatSliderPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -549,10 +1189,7 @@ class _WidgetAppearanceCardState extends State<_WidgetAppearanceCard> {
                     color: cs.onSurface.withAlpha(153),
                   ),
             ),
-
             const Gap(12),
-
-            // ── Opacity ───────────────────────────────────────────────────
             Row(
               children: [
                 const Icon(Icons.opacity_outlined, size: 20),
@@ -577,11 +1214,8 @@ class _WidgetAppearanceCardState extends State<_WidgetAppearanceCard> {
               onChanged: (v) => setState(() => _opacity = v),
               onChangeEnd: (v) => WidgetSettings.setOpacity(v),
             ),
-
             Divider(height: 1, color: cs.outlineVariant),
             const Gap(12),
-
-            // ── Color mode ────────────────────────────────────────────────
             Row(
               children: [
                 const Icon(Icons.palette_outlined, size: 20),
@@ -682,8 +1316,7 @@ class _InfoCard extends StatelessWidget {
               subtitle:
                   items[i].subtitle != null ? Text(items[i].subtitle!) : null,
               trailing: items[i].onTap != null
-                  ? Icon(Icons.chevron_right_rounded,
-                      color: cs.onSurfaceVariant)
+                  ? Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant)
                   : null,
               onTap: items[i].onTap,
             ),
