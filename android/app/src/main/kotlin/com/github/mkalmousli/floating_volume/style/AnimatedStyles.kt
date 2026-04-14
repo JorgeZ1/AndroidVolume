@@ -47,7 +47,7 @@ class RgbAuroraStyleApplier : ButtonStyleApplier {
         val bg2 = minusBg ?: return
 
         animator = ValueAnimator.ofFloat(0f, 360f).apply {
-            duration     = 3_000L
+            duration     = 7_000L
             repeatCount  = ValueAnimator.INFINITE
             repeatMode   = ValueAnimator.RESTART
             interpolator = LinearInterpolator()
@@ -83,7 +83,7 @@ class RgbNeonStyleApplier : ButtonStyleApplier {
         plusLabel: TextView, minusLabel: TextView,
         dp: (Number) -> Int,
     ) {
-        strokePx = dp(2)
+        strokePx = dp(3)
         val cyan    = Color.parseColor("#00FFFF")
         val magenta = Color.parseColor("#FF00FF")
 
@@ -115,7 +115,7 @@ class RgbNeonStyleApplier : ButtonStyleApplier {
         val sw   = strokePx
 
         animator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration    = 2_000L
+            duration    = 4_000L
             repeatCount = ValueAnimator.INFINITE
             repeatMode  = ValueAnimator.REVERSE
             addUpdateListener { anim ->
@@ -245,7 +245,7 @@ class LavaStyleApplier : ButtonStyleApplier {
         val pvh = PropertyValuesHolder.ofKeyframe("t", kf0, kf1, kf2, kf3, kf4, kf5)
 
         animator = ValueAnimator.ofPropertyValuesHolder(pvh).apply {
-            duration    = 1_400L
+            duration    = 2_800L
             repeatCount = ValueAnimator.INFINITE
             repeatMode  = ValueAnimator.RESTART
             addUpdateListener { anim ->

@@ -3,7 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:floating_volume/src/services/ad_service.dart';
 import 'package:floating_volume/src/widget_settings.dart';
+import 'package:floating_volume/src/screens/privacy_policy_screen.dart';
 
 import 'package:floating_volume/src/bloc/status/bloc.dart' as bstatus;
 import 'package:floating_volume/src/bloc/status/event.dart' as estatus;
@@ -34,6 +37,8 @@ extension WidgetStyleExt on WidgetStyle {
         WidgetStyle.cosmic       => 'Cosmic',
         WidgetStyle.lava         => 'Lava',
       };
+
+  bool get isSpecial => index >= 5; // rgbAurora, rgbNeon, cosmic, lava
 
   Widget get preview => switch (this) {
         WidgetStyle.android      => const _AndroidStylePreview(),
@@ -211,6 +216,8 @@ class _MainViewState extends State<_MainView> {
   WidgetStyle _selectedStyle = WidgetStyle.android;
   bool _styleLoaded = false;
   bool _isPinned = false;
+  bool _specialUnlocked = false;
+  String? _unlockTimeLeft;
 
   @override
   void initState() {
@@ -219,19 +226,24 @@ class _MainViewState extends State<_MainView> {
   }
 
   Future<void> _loadSettings() async {
+    if (_styleLoaded) return; // guard against re-entry
     final prefs = await SharedPreferences.getInstance();
     final name = prefs.getString('widget_style');
     final style = WidgetStyle.values.where((s) => s.name == name).firstOrNull
         ?? WidgetStyle.android;
     final pinned = prefs.getBool('widget_pinned') ?? false;
-    if (mounted) {
+    final unlocked = await AdService.isUnlocked();
+    final timeLeft = await AdService.timeLeftLabel();
+    if (mounted && !_styleLoaded) {
       setState(() {
         _selectedStyle = style;
         _isPinned = pinned;
+        _specialUnlocked = unlocked;
+        _unlockTimeLeft = timeLeft;
         _styleLoaded = true;
       });
-      await WidgetSettings.setWidgetStyle(style);
-      await WidgetSettings.setPinned(pinned);
+      try { await WidgetSettings.setWidgetStyle(style); } catch (_) {}
+      try { await WidgetSettings.setPinned(pinned); } catch (_) {}
     }
   }
 
@@ -239,14 +251,37 @@ class _MainViewState extends State<_MainView> {
     setState(() => _selectedStyle = style);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('widget_style', style.name);
-    await WidgetSettings.setWidgetStyle(style);
+    try { await WidgetSettings.setWidgetStyle(style); } catch (_) {}
   }
 
   Future<void> _togglePin(bool value) async {
     setState(() => _isPinned = value);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('widget_pinned', value);
-    await WidgetSettings.setPinned(value);
+    try { await WidgetSettings.setPinned(value); } catch (_) {}
+  }
+
+  void _showUnlockSheet(WidgetStyle style) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _UnlockSheet(
+        style: style,
+        onUnlocked: () async {
+          final timeLeft = await AdService.timeLeftLabel();
+          if (mounted) {
+            setState(() {
+              _specialUnlocked = true;
+              _unlockTimeLeft = timeLeft;
+            });
+            _selectStyle(style);
+          }
+        },
+      ),
+    );
   }
 
   @override
@@ -335,7 +370,28 @@ class _MainViewState extends State<_MainView> {
 
           const Gap(20),
 
-          _SectionLabel('🌟 Estilos Especiales y Creativos'),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _SectionLabel('🌟 Estilos Especiales y Creativos'),
+              if (_specialUnlocked && _unlockTimeLeft != null) ...[
+                const Gap(8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withAlpha(30),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFFD700).withAlpha(100)),
+                  ),
+                  child: Text(
+                    '⏱ $_unlockTimeLeft',
+                    style: const TextStyle(
+                      color: Color(0xFFFFD700), fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ],
+          ),
           const Gap(12),
           SizedBox(
             height: 190,
@@ -346,11 +402,15 @@ class _MainViewState extends State<_MainView> {
                     separatorBuilder: (_, __) => const Gap(12),
                     itemBuilder: (context, index) {
                       final style = WidgetStyle.values[5 + index];
+                      final locked = !_specialUnlocked;
                       return _StyleCard(
                         label: style.label,
                         selected: _selectedStyle == style,
+                        locked: locked,
                         preview: style.preview,
-                        onTap: () => _selectStyle(style),
+                        onTap: () => locked
+                            ? _showUnlockSheet(style)
+                            : _selectStyle(style),
                       );
                     },
                   )
@@ -416,6 +476,28 @@ class _MainViewState extends State<_MainView> {
             ),
           ),
 
+          const Gap(24),
+
+          // ── Privacy policy ───────────────────────────────────────────────
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('Política de privacidad'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PrivacyPolicyScreen(),
+                ),
+              ),
+            ),
+          ),
+
           const Gap(32),
         ],
       ),
@@ -429,6 +511,7 @@ class _MainViewState extends State<_MainView> {
 class _StyleCard extends StatelessWidget {
   final String label;
   final bool selected;
+  final bool locked;
   final Widget preview;
   final VoidCallback onTap;
 
@@ -437,11 +520,13 @@ class _StyleCard extends StatelessWidget {
     required this.selected,
     required this.preview,
     required this.onTap,
+    this.locked = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isLight = cs.brightness == Brightness.light;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -457,41 +542,166 @@ class _StyleCard extends StatelessWidget {
           ),
           boxShadow: selected
               ? [BoxShadow(color: _kBlue.withAlpha(80), blurRadius: 10, spreadRadius: 1)]
-              : [],
+              : isLight
+                  ? [BoxShadow(color: Colors.black.withAlpha(40), blurRadius: 8, offset: const Offset(0, 2))]
+                  : [],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-                child: preview,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (selected) ...[
-                    const Icon(Icons.check_circle_rounded, size: 13, color: _kBlue),
-                    const Gap(4),
-                  ],
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: selected ? _kBlue : Colors.white70,
-                      fontSize: 13,
-                    ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+                    child: preview,
                   ),
-                ],
-              ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (selected) ...[
+                        const Icon(Icons.check_circle_rounded, size: 13, color: _kBlue),
+                        const Gap(4),
+                      ],
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: selected ? _kBlue : Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+            if (locked)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withAlpha(165),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.lock_rounded, color: Color(0xFFFFD700), size: 26),
+                      Gap(6),
+                      Text('Especial',
+                          style: TextStyle(
+                              color: Color(0xFFFFD700),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
+                      Gap(3),
+                      Text('Ver anuncio',
+                          style: TextStyle(color: Colors.white70, fontSize: 10)),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Unlock sheet — shown when user taps a locked special style
+// ---------------------------------------------------------------------------
+class _UnlockSheet extends StatefulWidget {
+  final WidgetStyle style;
+  final VoidCallback onUnlocked;
+
+  const _UnlockSheet({required this.style, required this.onUnlocked});
+
+  @override
+  State<_UnlockSheet> createState() => _UnlockSheetState();
+}
+
+class _UnlockSheetState extends State<_UnlockSheet> {
+  bool _loading = false;
+  bool _failed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24, right: 24, top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            width: 40, height: 4,
+            margin: const EdgeInsets.only(bottom: 20),
+            decoration: BoxDecoration(
+              color: cs.onSurfaceVariant.withAlpha(60),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const Icon(Icons.auto_awesome_rounded, color: Color(0xFFFFD700), size: 40),
+          const Gap(12),
+          Text(
+            'Estilo Especial: ${widget.style.label}',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const Gap(8),
+          Text(
+            'Ve un breve anuncio para desbloquear todos los\nestilos especiales durante 3 días.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
+          const Gap(24),
+          if (_loading)
+            const CircularProgressIndicator()
+          else if (_failed)
+            Text(
+              'Anuncio no disponible.\nIntenta de nuevo más tarde.',
+              style: TextStyle(color: cs.error),
+              textAlign: TextAlign.center,
+            )
+          else
+            FilledButton.icon(
+              icon: const Icon(Icons.play_circle_outline_rounded),
+              label: const Text('Ver anuncio — desbloquear 3 días'),
+              onPressed: _watchAd,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+                backgroundColor: const Color(0xFFFFD700),
+                foregroundColor: Colors.black87,
+              ),
+            ),
+          const Gap(12),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _watchAd() async {
+    setState(() { _loading = true; _failed = false; });
+    final shown = await AdService.showAd(
+      onRewarded: () {
+        if (mounted) Navigator.pop(context);
+        widget.onUnlocked();
+      },
+    );
+    if (mounted && !shown) {
+      setState(() { _loading = false; _failed = true; });
+    }
   }
 }
 
@@ -560,9 +770,9 @@ class _IosStylePreview extends StatelessWidget {
           width: 44,
           height: 110,
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(30),
+            color: Colors.white.withAlpha(55),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withAlpha(60), width: 1),
+            border: Border.all(color: Colors.white.withAlpha(110), width: 1),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -642,9 +852,9 @@ class _MiuiButton extends StatelessWidget {
       width: 46,
       height: 46,
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(15),
+        color: Colors.white.withAlpha(35),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accent.withAlpha(180), width: 1.5),
+        border: Border.all(color: accent.withAlpha(210), width: 1.5),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -714,7 +924,7 @@ class _OneUiButton extends StatelessWidget {
       width: 44,
       height: 40,
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(18),
+        color: Colors.white.withAlpha(40),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(icon, color: accent, size: 22),
@@ -740,7 +950,7 @@ class _RgbAuroraPreviewState extends State<_RgbAuroraPreview>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 7))
       ..repeat();
   }
 
@@ -840,7 +1050,7 @@ class _RgbNeonPreviewState extends State<_RgbNeonPreview>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))
       ..repeat(reverse: true);
   }
 
@@ -855,10 +1065,9 @@ class _RgbNeonPreviewState extends State<_RgbNeonPreview>
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
-        final cyan =
-            Color.lerp(const Color(0xFF00FFFF), const Color(0xFF00B4FF), _ctrl.value)!;
-        final magenta =
-            Color.lerp(const Color(0xFFFF00FF), const Color(0xFFFF0090), _ctrl.value)!;
+        final t = _ctrl.value;
+        final cyan    = Color.lerp(const Color(0xFF00FFFF), const Color(0xFFFF00FF), t)!;
+        final magenta = Color.lerp(const Color(0xFFFF00FF), const Color(0xFF00FFFF), t)!;
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -919,7 +1128,8 @@ class _NeonButton extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: glowColor, width: 2),
         boxShadow: [
-          BoxShadow(color: glowColor.withAlpha(180), blurRadius: 10, spreadRadius: 1)
+          BoxShadow(color: glowColor.withAlpha(220), blurRadius: 16, spreadRadius: 2),
+          BoxShadow(color: glowColor.withAlpha(90), blurRadius: 32, spreadRadius: 0),
         ],
       ),
       alignment: Alignment.center,
@@ -973,39 +1183,91 @@ class _CosmicPreviewState extends State<_CosmicPreview>
         final c1 = Color.lerp(_spaceBlue, const Color(0xFF1A0A3F), t)!;
         final c2 = Color.lerp(_purple, _deepPurple, t)!;
         final c3 = Color.lerp(_gold, _orange, t)!;
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
+        return Stack(
           children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _GradientCircle(label: '+', colors: [c1, c2]),
-                const Gap(10),
-                _GradientCircle(label: '−', colors: [c2, c3]),
-              ],
-            ),
-            const Gap(10),
-            Container(
-              width: 12,
-              height: 90,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(6),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [c3, c2, c1],
-                ),
-                boxShadow: [
-                  BoxShadow(color: c2.withAlpha(120), blurRadius: 10),
-                ],
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _CosmicStarPainter(_ctrl.value),
               ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _GradientCircle(label: '+', colors: [c1, c2]),
+                    const Gap(10),
+                    _GradientCircle(label: '−', colors: [c2, c3]),
+                  ],
+                ),
+                const Gap(10),
+                Container(
+                  width: 12,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [c3, c2, c1],
+                    ),
+                    boxShadow: [
+                      BoxShadow(color: c2.withAlpha(160), blurRadius: 14),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         );
       },
     );
   }
+}
+
+class _CosmicStarPainter extends CustomPainter {
+  final double t;
+  _CosmicStarPainter(this.t);
+
+  static const _stars = [
+    Offset(0.10, 0.10), Offset(0.88, 0.18), Offset(0.55, 0.50),
+    Offset(0.20, 0.78), Offset(0.80, 0.70), Offset(0.40, 0.25),
+    Offset(0.70, 0.88),
+  ];
+  static const _colors = [
+    Color(0xFFFFD700), Color(0xFFFFFFFF), Color(0xFF9B5DE5),
+    Color(0xFFFFFFFF), Color(0xFFFFD700), Color(0xFF9B5DE5),
+    Color(0xFFFFFFFF),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    for (int i = 0; i < _stars.length; i++) {
+      final phase = (t + i / _stars.length) % 1.0;
+      final alpha = phase < 0.20
+          ? phase / 0.20
+          : phase < 0.35
+              ? 1.0 - (phase - 0.20) / 0.15
+              : 0.0;
+      if (alpha <= 0) continue;
+      paint.color = _colors[i].withOpacity(alpha * 0.9);
+      final cx = _stars[i].dx * size.width;
+      final cy = _stars[i].dy * size.height;
+      canvas.drawCircle(Offset(cx, cy), 1.8, paint);
+      // Cross sparkle
+      paint.style = PaintingStyle.stroke;
+      paint.strokeWidth = 0.8;
+      canvas.drawLine(Offset(cx - 4, cy), Offset(cx + 4, cy), paint);
+      canvas.drawLine(Offset(cx, cy - 4), Offset(cx, cy + 4), paint);
+      paint.style = PaintingStyle.fill;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CosmicStarPainter old) => old.t != t;
 }
 
 // ── Lava ─────────────────────────────────────────────────────────────────────
@@ -1025,7 +1287,7 @@ class _LavaPreviewState extends State<_LavaPreview>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1400))
+        vsync: this, duration: const Duration(milliseconds: 2800))
       ..repeat();
     _heartbeat = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 12),   // first beat up

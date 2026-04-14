@@ -193,7 +193,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
 
         // Animate fill through rainbow hues
         fillAnimator = ValueAnimator.ofFloat(0f, 360f).apply {
-            duration     = 3_000L
+            duration     = 7_000L
             repeatCount  = ValueAnimator.INFINITE
             repeatMode   = ValueAnimator.RESTART
             interpolator = LinearInterpolator()
@@ -215,7 +215,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
 
         // Pulse border, fill AND label between cyan and magenta
         fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration    = 2_000L
+            duration    = 4_000L
             repeatCount = ValueAnimator.INFINITE
             repeatMode  = ValueAnimator.REVERSE
             addUpdateListener { anim ->
@@ -291,7 +291,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         val pvh = PropertyValuesHolder.ofKeyframe("t", kf0, kf1, kf2, kf3, kf4, kf5)
 
         fillAnimator = ValueAnimator.ofPropertyValuesHolder(pvh).apply {
-            duration    = 1_400L
+            duration    = 2_800L
             repeatCount = ValueAnimator.INFINITE
             repeatMode  = ValueAnimator.RESTART
             addUpdateListener { anim ->
