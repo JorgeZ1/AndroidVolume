@@ -131,7 +131,8 @@ class FloatingVolumeService : Service() {
                     val dx = event.rawX - startTouchX
                     val dy = event.rawY - startTouchY
 
-                    if (!isDragging && (abs(dx) > dragThreshold || abs(dy) > dragThreshold)) {
+                    if (!isDragging && !WidgetSettings.isPinned &&
+                            (abs(dx) > dragThreshold || abs(dy) > dragThreshold)) {
                         isDragging = true
                     }
 

@@ -22,6 +22,7 @@ class WidgetSettings {
   static double opacity = 1.0;
   static WidgetColorMode colorMode = WidgetColorMode.auto;
   static WidgetStyle style = WidgetStyle.android;
+  static bool isPinned = false;
 
   static Future<void> setOpacity(double value) async {
     opacity = value;
@@ -42,5 +43,10 @@ class WidgetSettings {
   static Future<void> setWidgetStyle(WidgetStyle s) async {
     style = s;
     await _ch.invokeMethod('setStyle', {'style': s.name});
+  }
+
+  static Future<void> setPinned(bool value) async {
+    isPinned = value;
+    await _ch.invokeMethod('setPinned', {'pinned': value});
   }
 }

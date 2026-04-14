@@ -34,6 +34,9 @@ object WidgetSettings {
     var style: Style = Style.ANDROID
         set(value) { field = value; dispatch() }
 
+    var isPinned: Boolean = false
+        set(value) { field = value; dispatch() }
+
     private val listeners = mutableListOf<() -> Unit>()
 
     fun addListener(l: () -> Unit)    { listeners.add(l) }
@@ -45,18 +48,21 @@ object WidgetSettings {
     private const val KEY_COLOR_MODE = "widget_color_mode"
     private const val KEY_OPACITY    = "widget_opacity"
     private const val KEY_STYLE      = "widget_style"
+    private const val KEY_PINNED     = "widget_pinned"
 
     fun load(prefs: SharedPreferences) {
         colorMode = ColorMode.entries.getOrElse(prefs.getInt(KEY_COLOR_MODE, 0)) { ColorMode.AUTO }
         opacity   = prefs.getFloat(KEY_OPACITY, 1f)
         style     = Style.entries.getOrElse(prefs.getInt(KEY_STYLE, 0)) { Style.ANDROID }
+        isPinned  = prefs.getBoolean(KEY_PINNED, false)
     }
 
     fun save(prefs: SharedPreferences) {
         prefs.edit()
-            .putInt(KEY_COLOR_MODE, colorMode.ordinal)
-            .putFloat(KEY_OPACITY,  opacity)
-            .putInt(KEY_STYLE,      style.ordinal)
+            .putInt(KEY_COLOR_MODE,  colorMode.ordinal)
+            .putFloat(KEY_OPACITY,   opacity)
+            .putInt(KEY_STYLE,       style.ordinal)
+            .putBoolean(KEY_PINNED,  isPinned)
             .apply()
     }
 }

@@ -1,5 +1,7 @@
 package com.github.mkalmousli.floating_volume
 
+import android.animation.Keyframe
+import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.Configuration
@@ -56,6 +58,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
 
     private var currentFraction = 0f
     private var fillAnimator: ValueAnimator? = null
+    private var sparkleAnimator: ValueAnimator? = null
 
     companion object {
         // Match these with showVolumeIndicator() in FloatingVolumeService
@@ -210,7 +213,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         numberLabel.setTextColor(Color.parseColor("#00FFFF"))
         iconLabel.setTextColor(Color.argb(200, 0, 255, 255))
 
-        // Pulse border and fill between cyan and magenta
+        // Pulse border, fill AND label between cyan and magenta
         fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
             duration    = 2_000L
             repeatCount = ValueAnimator.INFINITE
@@ -222,6 +225,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
                 cardBg.setStroke(dp(2), cyan)
                 fillBg.setColor(magenta)
                 numberLabel.setTextColor(cyan)
+                iconLabel.setTextColor(withAlpha(cyan, 200))
             }
             start()
         }
@@ -246,6 +250,27 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
             }
             start()
         }
+
+        // Sparkle: two brief star-like flashes per 900 ms cycle on the card border
+        sparkleAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration     = 900L
+            repeatCount  = ValueAnimator.INFINITE
+            repeatMode   = ValueAnimator.RESTART
+            interpolator = android.view.animation.LinearInterpolator()
+            addUpdateListener { anim ->
+                val t = anim.animatedValue as Float
+                val alpha = when {
+                    t < 0.08f -> (t / 0.08f * 255).toInt()
+                    t < 0.18f -> ((1f - (t - 0.08f) / 0.10f) * 255).toInt()
+                    t < 0.55f -> 0
+                    t < 0.63f -> ((t - 0.55f) / 0.08f * 200).toInt()
+                    t < 0.73f -> ((1f - (t - 0.63f) / 0.10f) * 200).toInt()
+                    else      -> 0
+                }
+                cardBg.setStroke(dp(1), Color.argb(alpha, 255, 255, 200))
+            }
+            start()
+        }
     }
 
     private fun applyLava() {
@@ -256,14 +281,25 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         numberLabel.setTextColor(Color.parseColor("#FFD700"))
         iconLabel.setTextColor(Color.argb(200, 255, 69, 0))
 
-        // Flicker fill between dark lava and bright fire tip
-        fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration    = 900L
+        // Heartbeat rhythm: quick double-pump then rest
+        val kf0 = Keyframe.ofFloat(0f,    0f)
+        val kf1 = Keyframe.ofFloat(0.12f, 1f)    // first beat peak
+        val kf2 = Keyframe.ofFloat(0.24f, 0.3f)  // valley between beats
+        val kf3 = Keyframe.ofFloat(0.36f, 0.75f) // second beat
+        val kf4 = Keyframe.ofFloat(0.50f, 0f)    // return to rest
+        val kf5 = Keyframe.ofFloat(1f,    0f)    // rest period
+        val pvh = PropertyValuesHolder.ofKeyframe("t", kf0, kf1, kf2, kf3, kf4, kf5)
+
+        fillAnimator = ValueAnimator.ofPropertyValuesHolder(pvh).apply {
+            duration    = 1_400L
             repeatCount = ValueAnimator.INFINITE
-            repeatMode  = ValueAnimator.REVERSE
+            repeatMode  = ValueAnimator.RESTART
             addUpdateListener { anim ->
                 val t = anim.animatedValue as Float
                 fillBg.setColor(lerpColor(0xFFFF4500.toInt(), 0xFFFFD700.toInt(), t))
+                cardBg.setStroke(dp(1), lerpColor(
+                    Color.argb(160, 255, 69, 0),
+                    Color.argb(255, 255, 180, 0), t))
             }
             start()
         }
@@ -287,7 +323,10 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         fillView.requestLayout()
     }
 
-    private fun stopFillAnimation() { fillAnimator?.cancel(); fillAnimator = null }
+    private fun stopFillAnimation() {
+        fillAnimator?.cancel();   fillAnimator   = null
+        sparkleAnimator?.cancel(); sparkleAnimator = null
+    }
 
     private fun withAlpha(color: Int, alpha: Int) =
         Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))

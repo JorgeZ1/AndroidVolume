@@ -1,5 +1,7 @@
 package com.github.mkalmousli.floating_volume.style
 
+import android.animation.Keyframe
+import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -233,10 +235,19 @@ class LavaStyleApplier : ButtonStyleApplier {
         val bg1 = plusBg  ?: return
         val bg2 = minusBg ?: return
 
-        animator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration    = 900L
+        // Heartbeat: quick double-pump then rest
+        val kf0 = Keyframe.ofFloat(0f,    0f)
+        val kf1 = Keyframe.ofFloat(0.12f, 1f)    // first beat peak
+        val kf2 = Keyframe.ofFloat(0.24f, 0.3f)  // valley between beats
+        val kf3 = Keyframe.ofFloat(0.36f, 0.75f) // second beat
+        val kf4 = Keyframe.ofFloat(0.50f, 0f)    // return to rest
+        val kf5 = Keyframe.ofFloat(1f,    0f)    // rest period
+        val pvh = PropertyValuesHolder.ofKeyframe("t", kf0, kf1, kf2, kf3, kf4, kf5)
+
+        animator = ValueAnimator.ofPropertyValuesHolder(pvh).apply {
+            duration    = 1_400L
             repeatCount = ValueAnimator.INFINITE
-            repeatMode  = ValueAnimator.REVERSE
+            repeatMode  = ValueAnimator.RESTART
             addUpdateListener { anim ->
                 val t      = anim.animatedValue as Float
                 val dark   = lerpColor(0xFF3D0000.toInt(), 0xFF6B0000.toInt(), t)

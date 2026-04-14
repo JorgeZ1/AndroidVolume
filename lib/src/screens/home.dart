@@ -3,8 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher_string.dart';
-
 import 'package:floating_volume/src/widget_settings.dart';
 
 import 'package:floating_volume/src/bloc/status/bloc.dart' as bstatus;
@@ -212,24 +210,28 @@ class _MainView extends StatefulWidget {
 class _MainViewState extends State<_MainView> {
   WidgetStyle _selectedStyle = WidgetStyle.android;
   bool _styleLoaded = false;
+  bool _isPinned = false;
 
   @override
   void initState() {
     super.initState();
-    _loadStyle();
+    _loadSettings();
   }
 
-  Future<void> _loadStyle() async {
+  Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final name = prefs.getString('widget_style');
     final style = WidgetStyle.values.where((s) => s.name == name).firstOrNull
         ?? WidgetStyle.android;
+    final pinned = prefs.getBool('widget_pinned') ?? false;
     if (mounted) {
       setState(() {
         _selectedStyle = style;
+        _isPinned = pinned;
         _styleLoaded = true;
       });
       await WidgetSettings.setWidgetStyle(style);
+      await WidgetSettings.setPinned(pinned);
     }
   }
 
@@ -238,6 +240,13 @@ class _MainViewState extends State<_MainView> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('widget_style', style.name);
     await WidgetSettings.setWidgetStyle(style);
+  }
+
+  Future<void> _togglePin(bool value) async {
+    setState(() => _isPinned = value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('widget_pinned', value);
+    await WidgetSettings.setPinned(value);
   }
 
   @override
@@ -278,10 +287,11 @@ class _MainViewState extends State<_MainView> {
                   },
                 ),
                 Divider(height: 1, indent: 16, endIndent: 16, color: cs.outlineVariant),
-                ListTile(
-                  leading: const Icon(Icons.push_pin_outlined),
+                SwitchListTile(
+                  secondary: const Icon(Icons.push_pin_outlined),
                   title: const Text('Botones de pin en su posición'),
-                  trailing: Text('No', style: TextStyle(color: cs.onSurfaceVariant)),
+                  value: _isPinned,
+                  onChanged: _togglePin,
                 ),
                 Divider(height: 1, indent: 16, endIndent: 16, color: cs.outlineVariant),
                 ListTile(
@@ -405,11 +415,6 @@ class _MainViewState extends State<_MainView> {
               ),
             ),
           ),
-
-          const Gap(12),
-
-          // ── Info / links ─────────────────────────────────────────────────
-          _InfoCard(),
 
           const Gap(32),
         ],
@@ -1014,12 +1019,21 @@ class _LavaPreview extends StatefulWidget {
 class _LavaPreviewState extends State<_LavaPreview>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
+  late Animation<double> _heartbeat;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1400))
+      ..repeat();
+    _heartbeat = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 12),   // first beat up
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.3), weight: 12),   // valley
+      TweenSequenceItem(tween: Tween(begin: 0.3, end: 0.75), weight: 12),  // second beat
+      TweenSequenceItem(tween: Tween(begin: 0.75, end: 0.0), weight: 14),  // back to rest
+      TweenSequenceItem(tween: ConstantTween(0.0), weight: 50),             // rest pause
+    ]).animate(_ctrl);
   }
 
   @override
@@ -1028,9 +1042,9 @@ class _LavaPreviewState extends State<_LavaPreview>
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _ctrl,
+      animation: _heartbeat,
       builder: (_, __) {
-        final t      = _ctrl.value;
+        final t      = _heartbeat.value;
         final dark   = Color.lerp(const Color(0xFF3D0000), const Color(0xFF6B0000), t)!;
         final mid    = Color.lerp(const Color(0xFFFF4500), const Color(0xFFFF6A00), t)!;
         final bright = Color.lerp(const Color(0xFFFF8C00), const Color(0xFFFFD700), t)!;
@@ -1166,7 +1180,6 @@ class _WidgetAppearanceCard extends StatefulWidget {
 
 class _WidgetAppearanceCardState extends State<_WidgetAppearanceCard> {
   double _opacity = WidgetSettings.opacity;
-  WidgetColorMode _colorMode = WidgetSettings.colorMode;
 
   @override
   Widget build(BuildContext context) {
@@ -1214,46 +1227,6 @@ class _WidgetAppearanceCardState extends State<_WidgetAppearanceCard> {
               onChanged: (v) => setState(() => _opacity = v),
               onChangeEnd: (v) => WidgetSettings.setOpacity(v),
             ),
-            Divider(height: 1, color: cs.outlineVariant),
-            const Gap(12),
-            Row(
-              children: [
-                const Icon(Icons.palette_outlined, size: 20),
-                const Gap(10),
-                Text('Color', style: Theme.of(context).textTheme.bodyMedium),
-              ],
-            ),
-            const Gap(10),
-            SegmentedButton<WidgetColorMode>(
-              style: SegmentedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              segments: const [
-                ButtonSegment(
-                  value: WidgetColorMode.auto,
-                  icon: Icon(Icons.contrast_outlined),
-                  label: Text('Auto'),
-                ),
-                ButtonSegment(
-                  value: WidgetColorMode.blue,
-                  icon: Icon(Icons.circle, color: Color(0xFF2979FF)),
-                  label: Text('Azul'),
-                ),
-                ButtonSegment(
-                  value: WidgetColorMode.dark,
-                  icon: Icon(Icons.circle, color: Color(0xFF1C1C1E)),
-                  label: Text('Negro'),
-                ),
-              ],
-              selected: {_colorMode},
-              onSelectionChanged: (v) {
-                setState(() => _colorMode = v.first);
-                WidgetSettings.setColorMode(v.first);
-              },
-              showSelectedIcon: false,
-            ),
           ],
         ),
       ),
@@ -1261,88 +1234,3 @@ class _WidgetAppearanceCardState extends State<_WidgetAppearanceCard> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Info / Links Card
-// ---------------------------------------------------------------------------
-class _InfoCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    final items = <_LinkItem>[
-      _LinkItem(
-        icon: Icons.info_outline_rounded,
-        title: 'Versión',
-        subtitle: 'v0.0.3 · 11 Oct 2025',
-        onTap: null,
-      ),
-      _LinkItem(
-        icon: Icons.person_outline_rounded,
-        title: 'Creado por @mkalmousli',
-        subtitle: 'mkalmousli.dev',
-        onTap: () => launchUrlString('https://mkalmousli.dev',
-            mode: LaunchMode.externalApplication),
-      ),
-      _LinkItem(
-        icon: Icons.bug_report_outlined,
-        title: 'Reportar un problema',
-        subtitle: 'Abrir un issue en GitHub',
-        onTap: () => launchUrlString(
-            'https://github.com/mkalmousli/FloatingVolume/issues',
-            mode: LaunchMode.externalApplication),
-      ),
-      _LinkItem(
-        icon: Icons.code_rounded,
-        title: 'Código fuente',
-        subtitle: 'Ver en GitHub',
-        onTap: () => launchUrlString(
-            'https://github.com/mkalmousli/FloatingVolume',
-            mode: LaunchMode.externalApplication),
-      ),
-    ];
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: cs.outlineVariant),
-      ),
-      child: Column(
-        children: [
-          for (int i = 0; i < items.length; i++) ...[
-            ListTile(
-              leading: Icon(items[i].icon, color: cs.onSurfaceVariant),
-              title: Text(items[i].title),
-              subtitle:
-                  items[i].subtitle != null ? Text(items[i].subtitle!) : null,
-              trailing: items[i].onTap != null
-                  ? Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant)
-                  : null,
-              onTap: items[i].onTap,
-            ),
-            if (i < items.length - 1)
-              Divider(
-                height: 1,
-                indent: 56,
-                color: cs.outlineVariant.withAlpha(128),
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _LinkItem {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final void Function()? onTap;
-
-  const _LinkItem({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    required this.onTap,
-  });
-}

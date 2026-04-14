@@ -185,6 +185,12 @@ class MainActivity : FlutterActivity() {
                             WidgetSettings.save(sharedPrefs)
                             result.success(null)
                         }
+                        "setPinned" -> {
+                            val pinned = call.argument<Boolean>("pinned") ?: false
+                            WidgetSettings.isPinned = pinned
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
                         else -> result.notImplemented()
                     }
                 }
