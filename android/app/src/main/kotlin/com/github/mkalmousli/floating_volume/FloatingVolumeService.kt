@@ -61,7 +61,10 @@ class FloatingVolumeService : Service() {
     private fun onSettingsChanged() {
         newInMain {
             floatingMuteView.applyTheme()
-            volumeIndicatorView?.applyStyle()
+            if (volumeIndicatorView != null) {
+                volumeIndicatorView?.applyStyle()
+                showVolumeIndicator()
+            }
         }
     }
 
@@ -240,6 +243,8 @@ class FloatingVolumeService : Service() {
             windowManager.addView(volumeIndicatorView, indicatorParams)
         } else {
             volumeIndicatorView!!.update(volume, maxVolume)
+            indicatorParams!!.width = indW
+            indicatorParams!!.height = indH
             indicatorParams!!.x = indX
             indicatorParams!!.y = indY
             windowManager.updateViewLayout(volumeIndicatorView, indicatorParams)

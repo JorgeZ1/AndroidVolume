@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -340,8 +341,7 @@ class _MainViewState extends State<_MainView> {
 
           const Gap(12),
 
-          // ── Widget appearance card ────────────────────────────────────────
-          const _WidgetAppearanceCard(),
+          // ── Widget appearance card moved to bottom ──
 
           const Gap(24),
 
@@ -474,6 +474,38 @@ class _MainViewState extends State<_MainView> {
                 ],
               ),
             ),
+          ),
+
+          const Gap(24),
+
+          // ── Advanced Personalization ──────────────────────────────────────
+          _SectionLabel('Opciones Avanzadas'),
+          const Gap(12),
+          _FloatingButtonsSettingsCard(
+            onChanged: () => setState(() {}),
+          ),
+          const Gap(12),
+          _VolumeIndicatorSettingsCard(
+            onChanged: () => setState(() {}),
+          ),
+          const Gap(16),
+          FilledButton.icon(
+            icon: const Icon(Icons.restore_rounded),
+            label: const Text('Restaurar Valores Predeterminados'),
+            style: FilledButton.styleFrom(
+              backgroundColor: cs.tertiary,
+              foregroundColor: cs.onTertiary,
+              minimumSize: const Size(double.infinity, 50),
+            ),
+            onPressed: () async {
+              await WidgetSettings.restoreDefaultsForStyle(WidgetSettings.style);
+              setState(() {});
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                   const SnackBar(content: Text('Valores de fábrica restablecidos para este diseño.')),
+                );
+              }
+            },
           ),
 
           const Gap(24),
@@ -762,34 +794,56 @@ class _IosStylePreview extends StatelessWidget {
   const _IosStylePreview();
   @override
   Widget build(BuildContext context) {
+    final frostedBtn = BoxDecoration(
+      color: Colors.white.withAlpha(55),
+      shape: BoxShape.circle,
+      border: Border.all(color: Colors.white.withAlpha(80), width: 1),
+    );
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 44, height: 44,
+              decoration: frostedBtn,
+              alignment: Alignment.center,
+              child: const Text('+', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+            ),
+            const Gap(10),
+            Container(
+              width: 44, height: 44,
+              decoration: frostedBtn,
+              alignment: Alignment.center,
+              child: const Text('−', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        const Gap(10),
         Container(
-          width: 44,
-          height: 110,
+          width: 32,
+          height: 100,
           decoration: BoxDecoration(
             color: Colors.white.withAlpha(55),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withAlpha(110), width: 1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withAlpha(80), width: 1),
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Column(
-                    children: [
-                      Container(height: 18, color: Colors.white.withAlpha(200)),
-                      Container(height: 34, color: Colors.white.withAlpha(40)),
-                    ],
+                padding: const EdgeInsets.all(4),
+                child: Container(
+                  width: double.infinity,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(200),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
-              Text('VOL', style: TextStyle(color: Colors.white.withAlpha(200), fontSize: 10, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -1037,7 +1091,6 @@ class _GradientCircle extends StatelessWidget {
 }
 
 // ── RGB Neon ────────────────────────────────────────────────────────────────
-import 'dart:math' as math;
 
 class _RgbNeonPreview extends StatefulWidget {
   const _RgbNeonPreview();
@@ -1494,10 +1547,6 @@ class _SlimSliderPreview extends StatelessWidget {
               decoration: const BoxDecoration(color: _kBlue, shape: BoxShape.circle),
             ),
           ),
-          const Positioned(
-            bottom: 10,
-            child: Text('VOL', style: TextStyle(color: _kBlue, fontSize: 10, fontWeight: FontWeight.bold)),
-          ),
         ],
       ),
     );
@@ -1514,28 +1563,21 @@ class _FatSliderPreview extends StatelessWidget {
         color: _kBlue,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Text('VOL', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Widget appearance — opacity + color mode
+// Advanced Personalization Cards
 // ---------------------------------------------------------------------------
-class _WidgetAppearanceCard extends StatefulWidget {
-  const _WidgetAppearanceCard();
 
-  @override
-  State<_WidgetAppearanceCard> createState() => _WidgetAppearanceCardState();
-}
-
-class _WidgetAppearanceCardState extends State<_WidgetAppearanceCard> {
-  double _opacity = WidgetSettings.opacity;
+class _FloatingButtonsSettingsCard extends StatelessWidget {
+  final VoidCallback onChanged;
+  const _FloatingButtonsSettingsCard({required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -1543,45 +1585,176 @@ class _WidgetAppearanceCardState extends State<_WidgetAppearanceCard> {
         side: BorderSide(color: cs.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Apariencia del widget',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: cs.onSurface.withAlpha(153),
+              'Botones Flotantes',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.bold,
                   ),
             ),
-            const Gap(12),
-            Row(
-              children: [
-                const Icon(Icons.opacity_outlined, size: 20),
-                const Gap(10),
-                Text('Opacidad', style: Theme.of(context).textTheme.bodyMedium),
-                const Spacer(),
-                Text(
-                  '${(_opacity * 100).round()}%',
-                  style: TextStyle(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+            const Gap(16),
+            _buildSliderRow(
+              context,
+              icon: Icons.aspect_ratio_outlined,
+              label: 'Tamaño',
+              value: WidgetSettings.buttonSize.toDouble(),
+              min: 36, max: 72, divisions: 18,
+              onChanged: (v) { WidgetSettings.setButtonSize(v.toInt()); onChanged(); },
+              formatStr: '${WidgetSettings.buttonSize}px',
             ),
-            Slider(
-              value: _opacity,
-              min: 0.2,
-              max: 1.0,
-              divisions: 16,
-              onChanged: (v) => setState(() => _opacity = v),
-              onChangeEnd: (v) => WidgetSettings.setOpacity(v),
+            _buildSliderRow(
+              context,
+              icon: Icons.rounded_corner_outlined,
+              label: 'Redondeo',
+              value: WidgetSettings.buttonCornerRadius,
+              min: 0.0, max: 0.5, divisions: 10,
+              onChanged: (v) { WidgetSettings.setButtonCornerRadius(v); onChanged(); },
+              formatStr: '${(WidgetSettings.buttonCornerRadius * 200).round()}%',
+            ),
+            _buildSliderRow(
+              context,
+              icon: Icons.height_outlined,
+              label: 'Separación',
+              value: WidgetSettings.buttonGap.toDouble(),
+              min: 0, max: 40, divisions: 20,
+              onChanged: (v) { WidgetSettings.setButtonGap(v.toInt()); onChanged(); },
+              formatStr: '${WidgetSettings.buttonGap}px',
+            ),
+            _buildSliderRow(
+              context,
+              icon: Icons.opacity_outlined,
+              label: 'Opacidad',
+              value: WidgetSettings.opacity,
+              min: 0.0, max: 1.0, divisions: 20,
+              onChanged: (v) { WidgetSettings.setOpacity(v); onChanged(); },
+              formatStr: '${(WidgetSettings.opacity * 100).round()}%',
             ),
           ],
         ),
       ),
     );
   }
+}
+
+class _VolumeIndicatorSettingsCard extends StatelessWidget {
+  final VoidCallback onChanged;
+  const _VolumeIndicatorSettingsCard({required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: cs.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Barra de Volumen',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const Gap(16),
+            _buildSliderRow(
+              context,
+              icon: Icons.timer_outlined,
+              label: 'Duración',
+              value: WidgetSettings.indicatorHideDelay.toDouble(),
+              min: 500, max: 4000, divisions: 14,
+              onChanged: (v) { WidgetSettings.setIndicatorHideDelay(v.toInt()); onChanged(); },
+              formatStr: '${WidgetSettings.indicatorHideDelay / 1000}s',
+            ),
+            _buildSliderRow(
+              context,
+              icon: Icons.straighten_outlined,
+              label: 'Ancho',
+              value: WidgetSettings.indicatorWidth.toDouble(),
+              min: 24, max: 100, divisions: 38,
+              onChanged: (v) { WidgetSettings.setIndicatorWidth(v.toInt()); onChanged(); },
+              formatStr: '${WidgetSettings.indicatorWidth}px',
+            ),
+            _buildSliderRow(
+              context,
+              icon: Icons.height_rounded,
+              label: 'Alto',
+              value: WidgetSettings.indicatorHeight.toDouble(),
+              min: 100, max: 300, divisions: 40,
+              onChanged: (v) { WidgetSettings.setIndicatorHeight(v.toInt()); onChanged(); },
+              formatStr: '${WidgetSettings.indicatorHeight}px',
+            ),
+            _buildSliderRow(
+              context,
+              icon: Icons.space_bar_rounded,
+              label: 'Distancia',
+              value: WidgetSettings.indicatorGap.toDouble(),
+              min: -20, max: 80, divisions: 25,
+              onChanged: (v) { WidgetSettings.setIndicatorGap(v.toInt()); onChanged(); },
+              formatStr: '${WidgetSettings.indicatorGap}px',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Widget _buildSliderRow(
+  BuildContext context, {
+  required IconData icon,
+  required String label,
+  required double value,
+  required double min,
+  required double max,
+  required int divisions,
+  required ValueChanged<double> onChanged,
+  required String formatStr,
+}) {
+  final cs = Theme.of(context).colorScheme;
+  return Column(
+    children: [
+      Row(
+        children: [
+          Icon(icon, size: 18, color: cs.onSurfaceVariant),
+          const Gap(10),
+          Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          const Spacer(),
+          Text(
+            formatStr,
+            style: TextStyle(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+      SliderTheme(
+        data: SliderTheme.of(context).copyWith(
+          overlayShape: SliderComponentShape.noOverlay,
+          trackHeight: 3,
+          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+        ),
+        child: Slider(
+          value: value,
+          min: min,
+          max: max,
+          divisions: divisions,
+          onChanged: onChanged,
+        ),
+      ),
+      const Gap(12),
+    ],
+  );
 }
 

@@ -191,6 +191,51 @@ class MainActivity : FlutterActivity() {
                             WidgetSettings.save(sharedPrefs)
                             result.success(null)
                         }
+                        "setButtonSize" -> {
+                            WidgetSettings.buttonSize = call.argument<Int>("value") ?: 52
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setButtonCornerRadius" -> {
+                            WidgetSettings.buttonCornerRadius = (call.argument<Double>("value") ?: 0.5).toFloat()
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setButtonGap" -> {
+                            WidgetSettings.buttonGap = call.argument<Int>("value") ?: 10
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setIndicatorOpacity" -> {
+                            WidgetSettings.indicatorOpacity = (call.argument<Double>("value") ?: 1.0).toFloat()
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setIndicatorHeight" -> {
+                            WidgetSettings.indicatorHeight = call.argument<Int>("value") ?: 160
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setIndicatorWidth" -> {
+                            WidgetSettings.indicatorWidth = call.argument<Int>("value") ?: 48
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setIndicatorGap" -> {
+                            WidgetSettings.indicatorGap = call.argument<Int>("value") ?: 10
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setIndicatorHideDelay" -> {
+                            WidgetSettings.indicatorHideDelay = call.argument<Int>("value") ?: 1800
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setIndicatorAnimation" -> {
+                            WidgetSettings.indicatorAnimation = call.argument<String>("value") ?: "fade"
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
                         else -> result.notImplemented()
                     }
                 }

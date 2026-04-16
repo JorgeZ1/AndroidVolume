@@ -120,6 +120,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
     /** Call whenever [WidgetSettings] changes (color mode, style, opacity). */
     fun applyStyle() {
         stopFillAnimation()
+        iconLabel.visibility = android.view.View.VISIBLE
 
         val isDark = resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
@@ -336,7 +337,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         trackBg.setColor(track)
         fillBg.setColor(fill)
         numberLabel.setTextColor(text)
-        iconLabel.setTextColor(withAlpha(text, 160))
+        iconLabel.visibility = android.view.View.GONE
     }
 
     private fun updateFill() {

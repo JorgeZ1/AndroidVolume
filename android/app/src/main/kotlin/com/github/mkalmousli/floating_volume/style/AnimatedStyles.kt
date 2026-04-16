@@ -8,6 +8,10 @@ import android.graphics.drawable.GradientDrawable
 import android.view.View
 import android.view.animation.LinearInterpolator
 import android.widget.TextView
+import com.github.mkalmousli.floating_volume.WidgetSettings
+
+private val dynamicCornerDp: Float
+    get() = WidgetSettings.buttonSize * WidgetSettings.buttonCornerRadius
 
 // ── RGB Aurora ───────────────────────────────────────────────────────────────
 // Continuously rotates hue across the full spectrum (3 s cycle).
@@ -26,12 +30,12 @@ class RgbAuroraStyleApplier : ButtonStyleApplier {
         val bg1 = GradientDrawable(
             GradientDrawable.Orientation.TL_BR,
             intArrayOf(Color.parseColor("#FF0080"), Color.parseColor("#7B00FF"))
-        ).apply { shape = GradientDrawable.OVAL }
+        ).apply { shape = GradientDrawable.RECTANGLE; cornerRadius = dp(dynamicCornerDp).toFloat() }
 
         val bg2 = GradientDrawable(
             GradientDrawable.Orientation.TL_BR,
             intArrayOf(Color.parseColor("#7B00FF"), Color.parseColor("#00C9FF"))
-        ).apply { shape = GradientDrawable.OVAL }
+        ).apply { shape = GradientDrawable.RECTANGLE; cornerRadius = dp(dynamicCornerDp).toFloat() }
 
         plusBtn.background  = bg1;  plusBtn.elevation  = dp(3).toFloat()
         minusBtn.background = bg2;  minusBtn.elevation = dp(3).toFloat()
@@ -90,19 +94,21 @@ class RgbNeonStyleApplier : ButtonStyleApplier {
         val magenta = Color.parseColor("#FF00FF")
 
         val bg1 = android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.OVAL
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius = dp(dynamicCornerDp).toFloat()
             setColor(Color.BLACK)
         }
         val bg2 = android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.OVAL
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius = dp(dynamicCornerDp).toFloat()
             setColor(Color.BLACK)
         }
 
         val border1 = RotatingBorderDrawable(
-            dp(2.5f).toFloat(), dp(26).toFloat(), intArrayOf(cyan, magenta, cyan)
+            dp(2.5f).toFloat(), dp(dynamicCornerDp).toFloat(), intArrayOf(cyan, magenta, cyan)
         )
         val border2 = RotatingBorderDrawable(
-            dp(2.5f).toFloat(), dp(26).toFloat(), intArrayOf(magenta, cyan, magenta)
+            dp(2.5f).toFloat(), dp(dynamicCornerDp).toFloat(), intArrayOf(magenta, cyan, magenta)
         )
 
         plusBtn.background  = android.graphics.drawable.LayerDrawable(arrayOf(bg1, border1))
@@ -174,18 +180,18 @@ class CosmicStyleApplier : ButtonStyleApplier {
         val bg1 = android.graphics.drawable.GradientDrawable(
             android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
             intArrayOf(Color.parseColor("#0D1B69"), Color.parseColor("#9B5DE5"))
-        ).apply { shape = android.graphics.drawable.GradientDrawable.OVAL }
+        ).apply { shape = android.graphics.drawable.GradientDrawable.RECTANGLE; cornerRadius = dp(dynamicCornerDp).toFloat() }
 
         val bg2 = android.graphics.drawable.GradientDrawable(
             android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
             intArrayOf(Color.parseColor("#9B5DE5"), Color.parseColor("#FFD700"))
-        ).apply { shape = android.graphics.drawable.GradientDrawable.OVAL }
+        ).apply { shape = android.graphics.drawable.GradientDrawable.RECTANGLE; cornerRadius = dp(dynamicCornerDp).toFloat() }
 
         val borderColors = intArrayOf(
             Color.parseColor("#9B5DE5"), Color.TRANSPARENT, Color.parseColor("#FFD700"), Color.TRANSPARENT, Color.parseColor("#9B5DE5")
         )
-        val border1 = RotatingBorderDrawable(dp(2f).toFloat(), dp(26).toFloat(), borderColors)
-        val border2 = RotatingBorderDrawable(dp(2f).toFloat(), dp(26).toFloat(), borderColors)
+        val border1 = RotatingBorderDrawable(dp(2f).toFloat(), dp(dynamicCornerDp).toFloat(), borderColors)
+        val border2 = RotatingBorderDrawable(dp(2f).toFloat(), dp(dynamicCornerDp).toFloat(), borderColors)
 
         plusBtn.background  = android.graphics.drawable.LayerDrawable(arrayOf(bg1, border1))
         minusBtn.background = android.graphics.drawable.LayerDrawable(arrayOf(bg2, border2))
@@ -255,12 +261,12 @@ class LavaStyleApplier : ButtonStyleApplier {
         val bg1 = GradientDrawable(
             GradientDrawable.Orientation.BOTTOM_TOP,
             intArrayOf(Color.parseColor("#3D0000"), Color.parseColor("#FF4500"))
-        ).apply { shape = GradientDrawable.OVAL }
+        ).apply { shape = GradientDrawable.RECTANGLE; cornerRadius = dp(dynamicCornerDp).toFloat() }
 
         val bg2 = GradientDrawable(
             GradientDrawable.Orientation.BOTTOM_TOP,
             intArrayOf(Color.parseColor("#FF4500"), Color.parseColor("#FFD700"))
-        ).apply { shape = GradientDrawable.OVAL }
+        ).apply { shape = GradientDrawable.RECTANGLE; cornerRadius = dp(dynamicCornerDp).toFloat() }
 
         plusBtn.background  = bg1;  plusBtn.elevation  = dp(6).toFloat()
         minusBtn.background = bg2;  minusBtn.elevation = dp(4).toFloat()

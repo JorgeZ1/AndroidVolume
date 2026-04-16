@@ -8,9 +8,6 @@ import com.github.mkalmousli.floating_volume.WidgetSettings
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-private fun ovalDrawable(color: Int) =
-    GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) }
-
 private fun roundRectDrawable(color: Int, cornerDp: Float, borderColor: Int = Color.TRANSPARENT, borderWidthPx: Int = 0) =
     GradientDrawable().apply {
         shape = GradientDrawable.RECTANGLE
@@ -18,6 +15,9 @@ private fun roundRectDrawable(color: Int, cornerDp: Float, borderColor: Int = Co
         setColor(color)
         if (borderWidthPx > 0) setStroke(borderWidthPx, borderColor)
     }
+
+private val dynamicCornerDp: Float
+    get() = WidgetSettings.buttonSize * WidgetSettings.buttonCornerRadius
 
 private fun applyToButtons(
     plusBtn: View, minusBtn: View,
@@ -55,7 +55,7 @@ class AndroidStyleApplier(
         }
         val elev = dp(if (isNight || colorMode == WidgetSettings.ColorMode.DARK) 3 else 5)
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { ovalDrawable(circleBg) }, iconColor, elev)
+            { roundRectDrawable(circleBg, dynamicCornerDp) }, iconColor, elev)
     }
 }
 
@@ -69,7 +69,7 @@ class Android12StyleApplier : ButtonStyleApplier {
         dp: (Number) -> Int,
     ) {
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { ovalDrawable(Color.parseColor("#2979FF")) }, Color.WHITE, dp(3))
+            { roundRectDrawable(Color.parseColor("#2979FF"), dynamicCornerDp) }, Color.WHITE, dp(3))
     }
 }
 
@@ -86,7 +86,7 @@ class IosStyleApplier : ButtonStyleApplier {
         val glassBg = Color.argb(50, 255, 255, 255)
         val border  = Color.argb(80, 255, 255, 255)
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { ovalDrawable(glassBg).also { it.setStroke(dp(1), border) } },
+            { roundRectDrawable(glassBg, dynamicCornerDp).also { it.setStroke(dp(1), border) } },
             Color.WHITE, dp(4))
     }
 }
@@ -103,9 +103,8 @@ class MiuiStyleApplier : ButtonStyleApplier {
         val orange    = Color.parseColor("#FF6900")
         val bgColor   = Color.argb(30, 255, 255, 255)
         val borderPx  = dp(2)
-        val corner    = dp(14).toFloat()
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { roundRectDrawable(bgColor, corner, orange, borderPx) },
+            { roundRectDrawable(bgColor, dynamicCornerDp, orange, borderPx) },
             orange, dp(2))
     }
 }
@@ -121,9 +120,8 @@ class OneUiStyleApplier : ButtonStyleApplier {
     ) {
         val teal    = Color.parseColor("#1DB3A8")
         val bgColor = Color.argb(40, 29, 179, 168)   // teal with low alpha
-        val corner  = dp(12).toFloat()
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { roundRectDrawable(bgColor, corner) },
+            { roundRectDrawable(bgColor, dynamicCornerDp) },
             teal, dp(3))
     }
 }
@@ -140,9 +138,8 @@ class CardsStyleApplier(private val isNight: Boolean) : ButtonStyleApplier {
     ) {
         val bgColor   = if (isNight) Color.parseColor("#2C2C2E") else Color.WHITE
         val iconColor = if (isNight) Color.WHITE else Color.parseColor("#1A1A1A")
-        val corner    = dp(14).toFloat()
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { roundRectDrawable(bgColor, corner) },
+            { roundRectDrawable(bgColor, dynamicCornerDp) },
             iconColor, dp(8))
     }
 }
