@@ -396,10 +396,12 @@ class FloatingVolumeService : Service() {
                 .filterIsInstance<PositionBloc.State.Initialized>()
                 .map { it.position }
                 .collectLatest { position ->
-                    layoutParams.x = position.x
-                    layoutParams.y = position.y
-                    if (floatingMuteView.isAttachedToWindow) {
-                        inMain { windowManager.updateViewLayout(floatingMuteView, layoutParams) }
+                    inMain {
+                        layoutParams.x = position.x
+                        layoutParams.y = position.y
+                        if (floatingMuteView.isAttachedToWindow) {
+                            windowManager.updateViewLayout(floatingMuteView, layoutParams)
+                        }
                     }
                 }
         }
