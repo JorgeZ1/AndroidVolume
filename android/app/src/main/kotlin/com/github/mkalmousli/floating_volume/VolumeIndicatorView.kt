@@ -203,9 +203,9 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         numberLabel.setTextColor(Color.WHITE)
         iconLabel.setTextColor(Color.argb(200, 255, 255, 255))
 
-        // Animate fill through rainbow hues
+        val animSpeed = WidgetSettings.creativeAnimSpeed.takeIf { it > 0 } ?: 1f
         fillAnimator = ValueAnimator.ofFloat(0f, 360f).apply {
-            duration     = 7_000L
+            duration     = (7_000L / animSpeed).toLong()
             repeatCount  = ValueAnimator.INFINITE
             repeatMode   = ValueAnimator.RESTART
             interpolator = LinearInterpolator()
@@ -228,13 +228,17 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         val cyan    = Color.parseColor("#00FFFF")
         val magenta = Color.parseColor("#FF00FF")
 
+        val animSpeed = WidgetSettings.creativeAnimSpeed.takeIf { it > 0 } ?: 1f
+        val glowRaw = WidgetSettings.creativeGlowIntensity
+        val glowWidth = dp(2).toFloat() * glowRaw * 1.5f
+
         animatedBorder = com.github.mkalmousli.floating_volume.style.RotatingBorderDrawable(
-            dp(2).toFloat(), dp(18).toFloat(), intArrayOf(cyan, magenta, cyan)
+            glowWidth, dp(18).toFloat(), intArrayOf(cyan, magenta, cyan)
         )
 
         // Pulse fill and label, and rotate border
         fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration    = 2_500L
+            duration    = (2_500L / animSpeed).toLong()
             repeatCount = ValueAnimator.INFINITE
             repeatMode  = ValueAnimator.RESTART
             addUpdateListener { anim ->
@@ -263,15 +267,18 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         numberLabel.setTextColor(Color.parseColor("#FFD700"))
         iconLabel.setTextColor(Color.argb(200, 155, 93, 229))
 
+        val animSpeed = WidgetSettings.creativeAnimSpeed.takeIf { it > 0 } ?: 1f
+        val glowWidth = dp(2).toFloat() * WidgetSettings.creativeGlowIntensity * 1.5f
+
         animatedBorder = com.github.mkalmousli.floating_volume.style.RotatingBorderDrawable(
-            dp(2).toFloat(), dp(18).toFloat(), intArrayOf(
+            glowWidth, dp(18).toFloat(), intArrayOf(
                 Color.parseColor("#9B5DE5"), Color.TRANSPARENT, Color.parseColor("#FFD700"), Color.TRANSPARENT, Color.parseColor("#9B5DE5")
             )
         )
 
         // Rotate borderline and pulse fill between purple and gold
         fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration    = 3_000L
+            duration    = (3_000L / animSpeed).toLong()
             repeatCount = ValueAnimator.INFINITE
             repeatMode  = ValueAnimator.RESTART
             addUpdateListener { anim ->
@@ -301,10 +308,11 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         val kf3 = Keyframe.ofFloat(0.36f, 0.75f) // second beat
         val kf4 = Keyframe.ofFloat(0.50f, 0f)    // return to rest
         val kf5 = Keyframe.ofFloat(1f,    0f)    // rest period
+        val animSpeed = WidgetSettings.creativeAnimSpeed.takeIf { it > 0 } ?: 1f
         val pvh = PropertyValuesHolder.ofKeyframe("t", kf0, kf1, kf2, kf3, kf4, kf5)
 
         fillAnimator = ValueAnimator.ofPropertyValuesHolder(pvh).apply {
-            duration    = 2_800L
+            duration    = (2_800L / animSpeed).toLong()
             repeatCount = ValueAnimator.INFINITE
             repeatMode  = ValueAnimator.RESTART
             addUpdateListener { anim ->

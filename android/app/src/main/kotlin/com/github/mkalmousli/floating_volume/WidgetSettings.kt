@@ -57,8 +57,13 @@ object WidgetSettings {
         set(value) { field = value; dispatch() }
     var indicatorAnimation: String = "fade"
         set(value) { field = value; dispatch() }
-    
     var useSystemVolume: Boolean = false
+        set(value) { field = value; dispatch() }
+
+    var creativeAnimSpeed: Float = 1.0f
+        set(value) { field = value; dispatch() }
+    
+    var creativeGlowIntensity: Float = 1.0f
         set(value) { field = value; dispatch() }
 
     private val listeners = mutableListOf<() -> Unit>()
@@ -83,6 +88,8 @@ object WidgetSettings {
     private const val KEY_IND_DELAY    = "widget_ind_delay"
     private const val KEY_IND_ANIM     = "widget_ind_anim"
     private const val KEY_USE_SYS_VOL  = "widget_use_sys_vol"
+    private const val KEY_CRT_SPEED    = "widget_crt_speed"
+    private const val KEY_CRT_GLOW     = "widget_crt_glow"
 
     fun load(prefs: SharedPreferences) {
         colorMode = ColorMode.entries.getOrElse(prefs.getInt(KEY_COLOR_MODE, 0)) { ColorMode.AUTO }
@@ -99,6 +106,8 @@ object WidgetSettings {
         indicatorHideDelay   = prefs.getInt(KEY_IND_DELAY, 1800)
         indicatorAnimation   = prefs.getString(KEY_IND_ANIM, "fade") ?: "fade"
         useSystemVolume      = prefs.getBoolean(KEY_USE_SYS_VOL, false)
+        creativeAnimSpeed    = prefs.getFloat(KEY_CRT_SPEED, 1.0f)
+        creativeGlowIntensity= prefs.getFloat(KEY_CRT_GLOW, 1.0f)
     }
 
     fun save(prefs: SharedPreferences) {
@@ -117,6 +126,8 @@ object WidgetSettings {
             .putInt(KEY_IND_DELAY,   indicatorHideDelay)
             .putString(KEY_IND_ANIM, indicatorAnimation)
             .putBoolean(KEY_USE_SYS_VOL, useSystemVolume)
+            .putFloat(KEY_CRT_SPEED, creativeAnimSpeed)
+            .putFloat(KEY_CRT_GLOW, creativeGlowIntensity)
             .apply()
     }
 }

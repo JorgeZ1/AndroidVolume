@@ -235,6 +235,8 @@ class _MainViewState extends State<_MainView> {
         ?? WidgetStyle.android;
     final pinned = prefs.getBool('widget_pinned') ?? false;
     final sysVol = prefs.getBool('widget_use_sys_vol') ?? false;
+    final crtSpeed = prefs.getDouble('widget_crt_speed') ?? 1.0;
+    final crtGlow = prefs.getDouble('widget_crt_glow') ?? 1.0;
     final unlocked = await AdService.isUnlocked();
     final timeLeft = await AdService.timeLeftLabel();
     if (mounted && !_styleLoaded) {
@@ -249,6 +251,8 @@ class _MainViewState extends State<_MainView> {
       try { await WidgetSettings.setWidgetStyle(style); } catch (_) {}
       try { await WidgetSettings.setPinned(pinned); } catch (_) {}
       try { await WidgetSettings.setUseSystemVolume(sysVol); } catch (_) {}
+      try { await WidgetSettings.setCreativeAnimSpeed(crtSpeed); } catch (_) {}
+      try { await WidgetSettings.setCreativeGlowIntensity(crtGlow); } catch (_) {}
     }
   }
 
@@ -496,6 +500,10 @@ class _MainViewState extends State<_MainView> {
           ),
           const Gap(12),
           _VolumeIndicatorSettingsCard(
+            onChanged: () => setState(() {}),
+          ),
+          const Gap(12),
+          _CreativeSettingsCard(
             onChanged: () => setState(() {}),
           ),
           const Gap(16),
@@ -786,9 +794,9 @@ class _AndroidStylePreview extends StatelessWidget {
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _PreviewCircle(label: '+', bg: bg, fg: fg, border: !dark),
+            _PreviewCircle(label: '+', bg: bg, fg: fg, border: dark),
             const Gap(10),
-            _PreviewCircle(label: '−', bg: bg, fg: fg, border: !dark),
+            _PreviewCircle(label: '−', bg: bg, fg: fg, border: dark),
           ],
         ),
         const Gap(10),
@@ -1738,9 +1746,71 @@ class _VolumeIndicatorSettingsCard extends StatelessWidget {
               icon: Icons.space_bar_rounded,
               label: 'Distancia',
               value: WidgetSettings.indicatorGap.toDouble(),
-              min: -20, max: 80, divisions: 25,
+              min: 0, max: 50, divisions: 5,
               onChanged: (v) { WidgetSettings.setIndicatorGap(v.toInt()); onChanged(); },
               formatStr: '${WidgetSettings.indicatorGap}px',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CreativeSettingsCard extends StatelessWidget {
+  final VoidCallback onChanged;
+  const _CreativeSettingsCard({required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.purple.withAlpha(100), width: 1.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.auto_awesome, color: Colors.purple, size: 20),
+                const Gap(8),
+                Text(
+                  'Diseños Creativos',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.purple,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            const Gap(8),
+            Text(
+              'Ajustes exclusivos para temas como Cosmic, Lava o RGB.',
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
+            ),
+            const Gap(16),
+            _buildSliderRow(
+              context,
+              icon: Icons.speed_outlined,
+              label: 'Velocidad de Animación',
+              value: WidgetSettings.creativeAnimSpeed,
+              min: 0.5, max: 2.0, divisions: 6,
+              onChanged: (v) { WidgetSettings.setCreativeAnimSpeed(v); onChanged(); },
+              formatStr: '${WidgetSettings.creativeAnimSpeed}x',
+            ),
+            _buildSliderRow(
+              context,
+              icon: Icons.blur_on_outlined,
+              label: 'Densidad del destello',
+              value: WidgetSettings.creativeGlowIntensity,
+              min: 0.2, max: 3.0, divisions: 14,
+              onChanged: (v) { WidgetSettings.setCreativeGlowIntensity(v); onChanged(); },
+              formatStr: '${(WidgetSettings.creativeGlowIntensity * 100).toInt()}%',
             ),
           ],
         ),

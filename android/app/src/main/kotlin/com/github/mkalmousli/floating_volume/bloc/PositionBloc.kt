@@ -53,10 +53,18 @@ object PositionBloc {
             val (lastXPrefKey, lastYPrefKey) =
                 getSharedPreferenceKeysForOrientation(orientation)
 
-            Position(
-                context.sharedPrefs.getInt(lastXPrefKey, 0),
-                context.sharedPrefs.getInt(lastYPrefKey, 0)
-            )
+            val dm = context.resources.displayMetrics
+            val defaultX = dm.widthPixels
+            val defaultY = dm.heightPixels / 2
+
+            val cachedX = context.sharedPrefs.getInt(lastXPrefKey, defaultX)
+            val cachedY = context.sharedPrefs.getInt(lastYPrefKey, defaultY)
+
+            // Override legacy exactly-zero defaulting
+            val finalX = if (cachedX == 0 && cachedY == 0) defaultX else cachedX
+            val finalY = if (cachedX == 0 && cachedY == 0) defaultY else cachedY
+
+            Position(finalX, finalY)
         }
 
         suspend fun getSavedPositionForCurrentOrientation(context: Context) = run {

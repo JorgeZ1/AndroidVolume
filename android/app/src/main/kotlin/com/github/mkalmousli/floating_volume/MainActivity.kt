@@ -197,6 +197,18 @@ class MainActivity : FlutterActivity() {
                             WidgetSettings.save(sharedPrefs)
                             result.success(null)
                         }
+                        "setCreativeAnimSpeed" -> {
+                            val v = call.argument<Double>("value") ?: 1.0
+                            WidgetSettings.creativeAnimSpeed = v.toFloat()
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setCreativeGlowIntensity" -> {
+                            val v = call.argument<Double>("value") ?: 1.0
+                            WidgetSettings.creativeGlowIntensity = v.toFloat()
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
                         "setButtonSize" -> {
                             WidgetSettings.buttonSize = call.argument<Int>("value") ?: 52
                             WidgetSettings.save(sharedPrefs)

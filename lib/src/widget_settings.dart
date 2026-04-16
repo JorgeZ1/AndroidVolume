@@ -58,6 +58,24 @@ class WidgetSettings {
     await _ch.invokeMethod('setUseSystemVolume', {'value': value});
   }
 
+  static double creativeAnimSpeed = 1.0;
+  static double creativeGlowIntensity = 1.0;
+
+  static Future<void> setCreativeAnimSpeed(double value) async {
+    creativeAnimSpeed = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('widget_crt_speed', value);
+    await _ch.invokeMethod('setCreativeAnimSpeed', {'value': value});
+  }
+
+  static Future<void> setCreativeGlowIntensity(double value) async {
+    creativeGlowIntensity = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('widget_crt_glow', value);
+    await _ch.invokeMethod('setCreativeGlowIntensity', {'value': value});
+  }
+
+
   static int buttonSize = 52;
   static Future<void> setButtonSize(int value) async {
     buttonSize = value;
