@@ -9,7 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 
 object ServiceStatusBloc {
     private val _state = MutableStateFlow<State>(
@@ -40,11 +39,11 @@ object ServiceStatusBloc {
         val scope = CoroutineScope(Dispatchers.Main)
         val intent = Intent(context, FloatingVolumeService::class.java)
 
-        event.collectLatest {
+        event.collect {
             when (it) {
                 is Event.Start -> {
                     if (_state.value is State.On) {
-                        return@collectLatest
+                        return@collect
                     }
 
                     scope.inMain {
@@ -55,7 +54,7 @@ object ServiceStatusBloc {
                 }
                 is Event.Stop -> {
                     if (_state.value is State.Off) {
-                        return@collectLatest
+                        return@collect
                     }
 
                     scope.inMain {

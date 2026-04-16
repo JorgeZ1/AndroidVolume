@@ -9,6 +9,8 @@ import com.github.mkalmousli.floating_volume.bloc.VisibilityBloc
 import com.github.mkalmousli.floating_volume.inIO
 import com.github.mkalmousli.floating_volume.inMain
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 
 
 class NativeApiImpl(
@@ -17,23 +19,23 @@ class NativeApiImpl(
 ) : NativeApi {
     override fun startService(callback: (Result<Unit>) -> Unit) {
         scope.inIO {
-            ServiceStatusBloc.event.emit(
-                ServiceStatusBloc.Event.Start
-            )
-            inMain {
-                callback(Result.success(Unit))
-            }
+            ServiceStatusBloc.event.emit(ServiceStatusBloc.Event.Start)
+            // Wait until the state is actually committed before signaling Flutter
+            ServiceStatusBloc.state
+                .filterIsInstance<ServiceStatusBloc.State.On>()
+                .first()
+            inMain { callback(Result.success(Unit)) }
         }
     }
 
     override fun stopService(callback: (Result<Unit>) -> Unit) {
         scope.inIO {
-            ServiceStatusBloc.event.emit(
-                ServiceStatusBloc.Event.Stop
-            )
-            inMain {
-                callback(Result.success(Unit))
-            }
+            ServiceStatusBloc.event.emit(ServiceStatusBloc.Event.Stop)
+            // Wait until the state is actually committed before signaling Flutter
+            ServiceStatusBloc.state
+                .filterIsInstance<ServiceStatusBloc.State.Off>()
+                .first()
+            inMain { callback(Result.success(Unit)) }
         }
     }
 

@@ -31,6 +31,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -85,6 +87,7 @@ class FloatingVolumeService : Service() {
     private var volumeIndicatorView: VolumeIndicatorView? = null
     private var indicatorParams: LayoutParams? = null
     private var hideIndicatorJob: Job? = null
+    private var isViewAttached = false
 
     private var layoutParams =
         LayoutParams(
@@ -200,8 +203,8 @@ class FloatingVolumeService : Service() {
         newInMain { showVolumeIndicator() }
     }
 
-    private fun showVolumeIndicator() {
-        val volume    = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+    private fun showVolumeIndicator(forcedVolume: Int? = null) {
+        val volume    = forcedVolume ?: audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
         val screenW  = resources.displayMetrics.widthPixels
@@ -258,6 +261,17 @@ class FloatingVolumeService : Service() {
         indicatorParams     = null
     }
 
+    /** Must be called on the Main thread. */
+    private fun updateViewVisibility(shouldShow: Boolean) {
+        if (shouldShow && !isViewAttached) {
+            windowManager.addView(floatingMuteView, layoutParams)
+            isViewAttached = true
+        } else if (!shouldShow && isViewAttached) {
+            windowManager.removeView(floatingMuteView)
+            isViewAttached = false
+        }
+    }
+
     // ---------------------------------------------------------------------------
     // Show / lifecycle
     // ---------------------------------------------------------------------------
@@ -272,7 +286,7 @@ class FloatingVolumeService : Service() {
         withContext(Dispatchers.Main) {
             layoutParams.x = position.x
             layoutParams.y = position.y
-            windowManager.addView(floatingMuteView, layoutParams)
+            updateViewVisibility(true)
         }
     }
 
@@ -293,7 +307,11 @@ class FloatingVolumeService : Service() {
         }
 
         scope.inIO {
+            // drop(1) skips the initial Off value that ServiceStatusBloc holds at startup.
+            // Without it, this collector fires stopSelf() immediately before the state
+            // transitions to On, which destroys the service right after it starts.
             ServiceStatusBloc.state
+                .drop(1)
                 .filterIsInstance<ServiceStatusBloc.State.Off>()
                 .first()
             inMain { stopSelf() }
@@ -340,22 +358,37 @@ class FloatingVolumeService : Service() {
             }
         }
 
+        // Launch visibility collector BEFORE adding the view.
+        // isViewAttached = false here, so initial Hidden is a no-op.
+        scope.launch {
+            VisibilityBloc.state.collect { state ->
+                Log.d(TAG, "VisibilityBloc state changed: $state")
+                withContext(Dispatchers.Main) {
+                    val shouldShow = state is VisibilityBloc.State.Shown
+                    updateViewVisibility(shouldShow)
+                }
+            }
+        }
+
+        // Keep the volume indicator in sync with the real system volume
+        // This solves the stale volume reading when rapidly pressing + and -
+        scope.inIO {
+            SystemVolumeBloc.state
+                .filterIsInstance<SystemVolumeBloc.State.Initialized>()
+                .map { it.volume }
+                .distinctUntilChanged()
+                .drop(1) // Skip the first emission when the service starts
+                .collect { volume ->
+                    inMain {
+                        showVolumeIndicator(volume)
+                    }
+                }
+        }
+
         Log.d(TAG, "Starting Floating Mute View")
         scope.inIO {
             showFloatingMuteView()
             withContext(Dispatchers.Main) { configureTouchListener() }
-        }
-
-        newInIO {
-            VisibilityBloc.state.collectLatest {
-                Log.d(TAG, "VisibilityBloc state changed: $it")
-                when (it) {
-                    VisibilityBloc.State.Hidden ->
-                        newInMain { floatingMuteView.visibility = android.view.View.GONE }
-                    VisibilityBloc.State.Shown ->
-                        newInMain { floatingMuteView.visibility = android.view.View.VISIBLE }
-                }
-            }
         }
 
         scope.inIO {
@@ -381,8 +414,6 @@ class FloatingVolumeService : Service() {
         WidgetSettings.removeListener(::onSettingsChanged)
         NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID)
         hideVolumeIndicator()
-        if (floatingMuteView.isAttachedToWindow) {
-            windowManager.removeView(floatingMuteView)
-        }
+        updateViewVisibility(false)
     }
 }

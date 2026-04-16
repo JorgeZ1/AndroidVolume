@@ -58,7 +58,7 @@ object SystemVolumeBloc {
         }
 
 
-        flow.collectLatest {
+        flow.collect {
             _state.emit(
                 State.Initialized(it)
             )
@@ -95,7 +95,7 @@ object SystemVolumeBloc {
         }
 
 
-        event.collectLatest {
+        event.collect {
             when (it) {
                 is Event.SetVolume -> setVolume(it.volume)
                 Event.Mute -> setVolume(0)
