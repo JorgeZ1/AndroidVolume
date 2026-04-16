@@ -72,58 +72,78 @@ class RgbAuroraStyleApplier : ButtonStyleApplier {
 class RgbNeonStyleApplier : ButtonStyleApplier {
 
     private var animator:  ValueAnimator? = null
-    private var plusBg:    GradientDrawable? = null
-    private var minusBg:   GradientDrawable? = null
+    private var plusBg:    android.graphics.drawable.GradientDrawable? = null
+    private var minusBg:   android.graphics.drawable.GradientDrawable? = null
+    private var plusBorder: RotatingBorderDrawable? = null
+    private var minusBorder: RotatingBorderDrawable? = null
     private var plusLbl:   TextView? = null
     private var minusLbl:  TextView? = null
-    private var strokePx:  Int = 4
+    private var plusBtnView: View? = null
+    private var minusBtnView: View? = null
 
     override fun apply(
         plusBtn: View, minusBtn: View,
         plusLabel: TextView, minusLabel: TextView,
         dp: (Number) -> Int,
     ) {
-        strokePx = dp(3)
         val cyan    = Color.parseColor("#00FFFF")
         val magenta = Color.parseColor("#FF00FF")
 
-        val bg1 = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
+        val bg1 = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.OVAL
             setColor(Color.BLACK)
-            setStroke(strokePx, cyan)
         }
-        val bg2 = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
+        val bg2 = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.OVAL
             setColor(Color.BLACK)
-            setStroke(strokePx, magenta)
         }
 
-        plusBtn.background  = bg1;  plusBtn.elevation  = dp(8).toFloat()
-        minusBtn.background = bg2;  minusBtn.elevation = dp(8).toFloat()
+        val border1 = RotatingBorderDrawable(
+            dp(2.5f).toFloat(), dp(26).toFloat(), intArrayOf(cyan, magenta, cyan)
+        )
+        val border2 = RotatingBorderDrawable(
+            dp(2.5f).toFloat(), dp(26).toFloat(), intArrayOf(magenta, cyan, magenta)
+        )
+
+        plusBtn.background  = android.graphics.drawable.LayerDrawable(arrayOf(bg1, border1))
+        minusBtn.background = android.graphics.drawable.LayerDrawable(arrayOf(bg2, border2))
+        plusBtn.elevation  = dp(8).toFloat()
+        minusBtn.elevation = dp(8).toFloat()
+
         plusLabel.setTextColor(cyan)
         minusLabel.setTextColor(magenta)
 
         plusBg  = bg1;   minusBg  = bg2
+        plusBorder = border1; minusBorder = border2
         plusLbl = plusLabel; minusLbl = minusLabel
+        plusBtnView = plusBtn; minusBtnView = minusBtn
     }
 
     override fun startAnimation() {
-        val bg1  = plusBg   ?: return
-        val bg2  = minusBg  ?: return
+        val b1   = plusBorder ?: return
+        val b2   = minusBorder ?: return
         val lbl1 = plusLbl  ?: return
         val lbl2 = minusLbl ?: return
-        val sw   = strokePx
+        val pBtn = plusBtnView ?: return
+        val mBtn = minusBtnView ?: return
 
         animator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration    = 4_000L
+            duration    = 2_500L
             repeatCount = ValueAnimator.INFINITE
-            repeatMode  = ValueAnimator.REVERSE
+            repeatMode  = ValueAnimator.RESTART
             addUpdateListener { anim ->
-                val t       = anim.animatedValue as Float
-                val cyan    = lerpColor(0xFF00FFFF.toInt(), 0xFF00B4FF.toInt(), t)
-                val magenta = lerpColor(0xFFFF00FF.toInt(), 0xFFFF0090.toInt(), t)
-                bg1.setStroke(sw, cyan);    lbl1.setTextColor(cyan)
-                bg2.setStroke(sw, magenta); lbl2.setTextColor(magenta)
+                val t = anim.animatedValue as Float
+                b1.rotation = t * 360f
+                b2.rotation = 360f - (t * 360f) // opposite direction
+
+                val pingPong = (Math.sin(t * Math.PI * 2) * 0.5 + 0.5).toFloat()
+                val cyan    = lerpColor(0xFF00FFFF.toInt(), 0xFF00B4FF.toInt(), pingPong)
+                val magenta = lerpColor(0xFFFF00FF.toInt(), 0xFFFF0090.toInt(), pingPong)
+                
+                lbl1.setTextColor(cyan)
+                lbl2.setTextColor(magenta)
+                pBtn.invalidate()
+                mBtn.invalidate()
             }
             start()
         }
@@ -139,8 +159,10 @@ class RgbNeonStyleApplier : ButtonStyleApplier {
 class CosmicStyleApplier : ButtonStyleApplier {
 
     private var animator:  ValueAnimator? = null
-    private var plusBg:    GradientDrawable? = null
-    private var minusBg:   GradientDrawable? = null
+    private var plusBg:    android.graphics.drawable.GradientDrawable? = null
+    private var minusBg:   android.graphics.drawable.GradientDrawable? = null
+    private var plusBorder: RotatingBorderDrawable? = null
+    private var minusBorder: RotatingBorderDrawable? = null
     private var plusBtn_:  View? = null
     private var minusBtn_: View? = null
 
@@ -149,46 +171,64 @@ class CosmicStyleApplier : ButtonStyleApplier {
         plusLabel: TextView, minusLabel: TextView,
         dp: (Number) -> Int,
     ) {
-        val bg1 = GradientDrawable(
-            GradientDrawable.Orientation.TL_BR,
+        val bg1 = android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
             intArrayOf(Color.parseColor("#0D1B69"), Color.parseColor("#9B5DE5"))
-        ).apply { shape = GradientDrawable.OVAL }
+        ).apply { shape = android.graphics.drawable.GradientDrawable.OVAL }
 
-        val bg2 = GradientDrawable(
-            GradientDrawable.Orientation.TL_BR,
+        val bg2 = android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
             intArrayOf(Color.parseColor("#9B5DE5"), Color.parseColor("#FFD700"))
-        ).apply { shape = GradientDrawable.OVAL }
+        ).apply { shape = android.graphics.drawable.GradientDrawable.OVAL }
 
-        plusBtn.background  = bg1;  plusBtn.elevation  = dp(10).toFloat()
-        minusBtn.background = bg2;  minusBtn.elevation = dp(10).toFloat()
+        val borderColors = intArrayOf(
+            Color.parseColor("#9B5DE5"), Color.TRANSPARENT, Color.parseColor("#FFD700"), Color.TRANSPARENT, Color.parseColor("#9B5DE5")
+        )
+        val border1 = RotatingBorderDrawable(dp(2f).toFloat(), dp(26).toFloat(), borderColors)
+        val border2 = RotatingBorderDrawable(dp(2f).toFloat(), dp(26).toFloat(), borderColors)
+
+        plusBtn.background  = android.graphics.drawable.LayerDrawable(arrayOf(bg1, border1))
+        minusBtn.background = android.graphics.drawable.LayerDrawable(arrayOf(bg2, border2))
+        
+        plusBtn.elevation  = dp(10).toFloat()
+        minusBtn.elevation = dp(10).toFloat()
         plusLabel.setTextColor(Color.WHITE)
         minusLabel.setTextColor(Color.WHITE)
 
         plusBg    = bg1;  minusBg   = bg2
+        plusBorder = border1; minusBorder = border2
         plusBtn_  = plusBtn; minusBtn_ = minusBtn
     }
 
     override fun startAnimation() {
         val bg1 = plusBg   ?: return
         val bg2 = minusBg  ?: return
+        val b1  = plusBorder ?: return
+        val b2  = minusBorder ?: return
         val p   = plusBtn_ ?: return
         val m   = minusBtn_?: return
 
-        // Morph gradient colors + pulse elevation together
+        // Morph gradient colors + pulse elevation + rotate borders together
         animator = ValueAnimator.ofFloat(0f, 1f).apply {
             duration    = 3_000L
             repeatCount = ValueAnimator.INFINITE
-            repeatMode  = ValueAnimator.REVERSE
+            repeatMode  = ValueAnimator.RESTART
             addUpdateListener { anim ->
                 val t       = anim.animatedValue as Float
-                val spBlue  = lerpColor(0xFF0D1B69.toInt(), 0xFF1A0A3F.toInt(), t)
-                val purple  = lerpColor(0xFF9B5DE5.toInt(), 0xFF5B10A0.toInt(), t)
-                val gold    = lerpColor(0xFFFFD700.toInt(), 0xFFFF8C00.toInt(), t)
+                b1.rotation = t * 360f
+                b2.rotation = t * 360f
+
+                val pingPong = (Math.sin(t * Math.PI * 2) * 0.5 + 0.5).toFloat()
+                val spBlue  = lerpColor(0xFF0D1B69.toInt(), 0xFF1A0A3F.toInt(), pingPong)
+                val purple  = lerpColor(0xFF9B5DE5.toInt(), 0xFF5B10A0.toInt(), pingPong)
+                val gold    = lerpColor(0xFFFFD700.toInt(), 0xFFFF8C00.toInt(), pingPong)
                 bg1.colors  = intArrayOf(spBlue, purple)
                 bg2.colors  = intArrayOf(purple, gold)
-                val elev    = 8f + t * 6f   // 8 → 14 dp equivalent
+                val elev    = 8f + pingPong * 6f   // 8 → 14 dp equivalent
                 p.elevation = elev
                 m.elevation = elev
+                p.invalidate()
+                m.invalidate()
             }
             start()
         }

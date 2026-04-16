@@ -59,6 +59,15 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
     private var currentFraction = 0f
     private var fillAnimator: ValueAnimator? = null
     private var sparkleAnimator: ValueAnimator? = null
+    private var animatedBorder: com.github.mkalmousli.floating_volume.style.RotatingBorderDrawable? = null
+
+    override fun dispatchDraw(canvas: android.graphics.Canvas) {
+        super.dispatchDraw(canvas)
+        animatedBorder?.let {
+            it.setBounds(0, 0, width, height)
+            it.draw(canvas)
+        }
+    }
 
     companion object {
         // Match these with showVolumeIndicator() in FloatingVolumeService
@@ -208,25 +217,37 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
 
     private fun applyRgbNeon() {
         cardBg.setColor(Color.BLACK)
-        cardBg.setStroke(dp(2), Color.parseColor("#00FFFF"))
+        cardBg.setStroke(0, Color.TRANSPARENT)
         trackBg.setColor(Color.argb(40, 255, 255, 255))
         fillBg.setColor(Color.parseColor("#00FFFF"))
         numberLabel.setTextColor(Color.parseColor("#00FFFF"))
         iconLabel.setTextColor(Color.argb(200, 0, 255, 255))
 
-        // Pulse border, fill AND label between cyan and magenta
+        val cyan    = Color.parseColor("#00FFFF")
+        val magenta = Color.parseColor("#FF00FF")
+
+        animatedBorder = com.github.mkalmousli.floating_volume.style.RotatingBorderDrawable(
+            dp(2).toFloat(), dp(18).toFloat(), intArrayOf(cyan, magenta, cyan)
+        )
+
+        // Pulse fill and label, and rotate border
         fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration    = 4_000L
+            duration    = 2_500L
             repeatCount = ValueAnimator.INFINITE
-            repeatMode  = ValueAnimator.REVERSE
+            repeatMode  = ValueAnimator.RESTART
             addUpdateListener { anim ->
                 val t       = anim.animatedValue as Float
-                val cyan    = lerpColor(0xFF00FFFF.toInt(), 0xFF00B4FF.toInt(), t)
-                val magenta = lerpColor(0xFFFF00FF.toInt(), 0xFFFF0090.toInt(), t)
-                cardBg.setStroke(dp(2), cyan)
-                fillBg.setColor(magenta)
-                numberLabel.setTextColor(cyan)
-                iconLabel.setTextColor(withAlpha(cyan, 200))
+                animatedBorder?.rotation = t * 360f
+
+                // Pulse the inner colors back and forth using sine
+                val pingPong = (Math.sin(t * Math.PI * 2) * 0.5 + 0.5).toFloat()
+                val currentCyan    = lerpColor(0xFF00FFFF.toInt(), 0xFF00B4FF.toInt(), pingPong)
+                val currentMagenta = lerpColor(0xFFFF00FF.toInt(), 0xFFFF0090.toInt(), pingPong)
+                
+                fillBg.setColor(currentMagenta)
+                numberLabel.setTextColor(currentCyan)
+                iconLabel.setTextColor(withAlpha(currentCyan, 200))
+                invalidate()
             }
             start()
         }
@@ -234,41 +255,30 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
 
     private fun applyCosmic() {
         cardBg.setColor(Color.parseColor("#0D0221"))
-        cardBg.setStroke(dp(1), Color.parseColor("#9B5DE5"))
+        cardBg.setStroke(0, Color.TRANSPARENT)
         trackBg.setColor(Color.argb(60, 155, 93, 229))
         fillBg.setColor(Color.parseColor("#9B5DE5"))
         numberLabel.setTextColor(Color.parseColor("#FFD700"))
         iconLabel.setTextColor(Color.argb(200, 155, 93, 229))
 
-        // Pulse fill between purple and gold
-        fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration    = 1_500L
-            repeatCount = ValueAnimator.INFINITE
-            repeatMode  = ValueAnimator.REVERSE
-            addUpdateListener { anim ->
-                val t = anim.animatedValue as Float
-                fillBg.setColor(lerpColor(0xFF9B5DE5.toInt(), 0xFFFFD700.toInt(), t))
-            }
-            start()
-        }
+        animatedBorder = com.github.mkalmousli.floating_volume.style.RotatingBorderDrawable(
+            dp(2).toFloat(), dp(18).toFloat(), intArrayOf(
+                Color.parseColor("#9B5DE5"), Color.TRANSPARENT, Color.parseColor("#FFD700"), Color.TRANSPARENT, Color.parseColor("#9B5DE5")
+            )
+        )
 
-        // Sparkle: two brief star-like flashes per 900 ms cycle on the card border
-        sparkleAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration     = 900L
-            repeatCount  = ValueAnimator.INFINITE
-            repeatMode   = ValueAnimator.RESTART
-            interpolator = android.view.animation.LinearInterpolator()
+        // Rotate borderline and pulse fill between purple and gold
+        fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration    = 3_000L
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode  = ValueAnimator.RESTART
             addUpdateListener { anim ->
                 val t = anim.animatedValue as Float
-                val alpha = when {
-                    t < 0.08f -> (t / 0.08f * 255).toInt()
-                    t < 0.18f -> ((1f - (t - 0.08f) / 0.10f) * 255).toInt()
-                    t < 0.55f -> 0
-                    t < 0.63f -> ((t - 0.55f) / 0.08f * 200).toInt()
-                    t < 0.73f -> ((1f - (t - 0.63f) / 0.10f) * 200).toInt()
-                    else      -> 0
-                }
-                cardBg.setStroke(dp(1), Color.argb(alpha, 255, 255, 200))
+                animatedBorder?.rotation = t * 360f
+
+                val pingPong = (Math.sin(t * Math.PI * 2) * 0.5 + 0.5).toFloat()
+                fillBg.setColor(lerpColor(0xFF9B5DE5.toInt(), 0xFFFFD700.toInt(), pingPong))
+                invalidate()
             }
             start()
         }
@@ -338,6 +348,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
     private fun stopFillAnimation() {
         fillAnimator?.cancel();   fillAnimator   = null
         sparkleAnimator?.cancel(); sparkleAnimator = null
+        animatedBorder = null
     }
 
     private fun withAlpha(color: Int, alpha: Int) =
