@@ -57,6 +57,9 @@ object WidgetSettings {
         set(value) { field = value; dispatch() }
     var indicatorAnimation: String = "fade"
         set(value) { field = value; dispatch() }
+    
+    var useSystemVolume: Boolean = false
+        set(value) { field = value; dispatch() }
 
     private val listeners = mutableListOf<() -> Unit>()
 
@@ -79,6 +82,7 @@ object WidgetSettings {
     private const val KEY_IND_GAP      = "widget_ind_gap"
     private const val KEY_IND_DELAY    = "widget_ind_delay"
     private const val KEY_IND_ANIM     = "widget_ind_anim"
+    private const val KEY_USE_SYS_VOL  = "widget_use_sys_vol"
 
     fun load(prefs: SharedPreferences) {
         colorMode = ColorMode.entries.getOrElse(prefs.getInt(KEY_COLOR_MODE, 0)) { ColorMode.AUTO }
@@ -94,6 +98,7 @@ object WidgetSettings {
         indicatorGap         = prefs.getInt(KEY_IND_GAP, 10)
         indicatorHideDelay   = prefs.getInt(KEY_IND_DELAY, 1800)
         indicatorAnimation   = prefs.getString(KEY_IND_ANIM, "fade") ?: "fade"
+        useSystemVolume      = prefs.getBoolean(KEY_USE_SYS_VOL, false)
     }
 
     fun save(prefs: SharedPreferences) {
@@ -111,6 +116,7 @@ object WidgetSettings {
             .putInt(KEY_IND_GAP,     indicatorGap)
             .putInt(KEY_IND_DELAY,   indicatorHideDelay)
             .putString(KEY_IND_ANIM, indicatorAnimation)
+            .putBoolean(KEY_USE_SYS_VOL, useSystemVolume)
             .apply()
     }
 }

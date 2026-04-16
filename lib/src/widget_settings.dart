@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 enum WidgetColorMode { auto, blue, dark }
 
 enum WidgetStyle {
@@ -48,6 +48,14 @@ class WidgetSettings {
   static Future<void> setPinned(bool value) async {
     isPinned = value;
     await _ch.invokeMethod('setPinned', {'pinned': value});
+  }
+
+  static bool useSystemVolume = false;
+  static Future<void> setUseSystemVolume(bool value) async {
+    useSystemVolume = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('widget_use_sys_vol', value);
+    await _ch.invokeMethod('setUseSystemVolume', {'value': value});
   }
 
   static int buttonSize = 52;

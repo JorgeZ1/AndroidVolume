@@ -191,6 +191,12 @@ class MainActivity : FlutterActivity() {
                             WidgetSettings.save(sharedPrefs)
                             result.success(null)
                         }
+                        "setUseSystemVolume" -> {
+                            val v = call.argument<Boolean>("value") ?: false
+                            WidgetSettings.useSystemVolume = v
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
                         "setButtonSize" -> {
                             WidgetSettings.buttonSize = call.argument<Int>("value") ?: 52
                             WidgetSettings.save(sharedPrefs)

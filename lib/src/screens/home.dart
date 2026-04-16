@@ -217,6 +217,7 @@ class _MainViewState extends State<_MainView> {
   WidgetStyle _selectedStyle = WidgetStyle.android;
   bool _styleLoaded = false;
   bool _isPinned = false;
+  bool _useSystemVolume = false;
   bool _specialUnlocked = false;
   String? _unlockTimeLeft;
 
@@ -233,18 +234,21 @@ class _MainViewState extends State<_MainView> {
     final style = WidgetStyle.values.where((s) => s.name == name).firstOrNull
         ?? WidgetStyle.android;
     final pinned = prefs.getBool('widget_pinned') ?? false;
+    final sysVol = prefs.getBool('widget_use_sys_vol') ?? false;
     final unlocked = await AdService.isUnlocked();
     final timeLeft = await AdService.timeLeftLabel();
     if (mounted && !_styleLoaded) {
       setState(() {
         _selectedStyle = style;
         _isPinned = pinned;
+        _useSystemVolume = sysVol;
         _specialUnlocked = unlocked;
         _unlockTimeLeft = timeLeft;
         _styleLoaded = true;
       });
       try { await WidgetSettings.setWidgetStyle(style); } catch (_) {}
       try { await WidgetSettings.setPinned(pinned); } catch (_) {}
+      try { await WidgetSettings.setUseSystemVolume(sysVol); } catch (_) {}
     }
   }
 
@@ -260,6 +264,11 @@ class _MainViewState extends State<_MainView> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('widget_pinned', value);
     try { await WidgetSettings.setPinned(value); } catch (_) {}
+  }
+
+  Future<void> _toggleSysVol(bool value) async {
+    setState(() => _useSystemVolume = value);
+    try { await WidgetSettings.setUseSystemVolume(value); } catch (_) {}
   }
 
   void _showUnlockSheet(WidgetStyle style) {
@@ -330,10 +339,11 @@ class _MainViewState extends State<_MainView> {
                   onChanged: _togglePin,
                 ),
                 Divider(height: 1, indent: 16, endIndent: 16, color: cs.outlineVariant),
-                ListTile(
-                  leading: const Icon(Icons.tune_outlined),
-                  title: const Text('Utilice el control deslizante de volumen'),
-                  trailing: Text('No', style: TextStyle(color: cs.onSurfaceVariant)),
+                SwitchListTile(
+                  secondary: const Icon(Icons.tune_outlined),
+                  title: const Text('Usar indicador nativo del sistema'),
+                  value: _useSystemVolume,
+                  onChanged: _toggleSysVol,
                 ),
               ],
             ),
@@ -498,12 +508,32 @@ class _MainViewState extends State<_MainView> {
               minimumSize: const Size(double.infinity, 50),
             ),
             onPressed: () async {
-              await WidgetSettings.restoreDefaultsForStyle(WidgetSettings.style);
-              setState(() {});
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                   const SnackBar(content: Text('Valores de fábrica restablecidos para este diseño.')),
-                );
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('¿Restaurar todo?'),
+                  content: const Text('Se perderán las posiciones, tamaños y opacidades que has configurado para este diseño.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancelar'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Aceptar'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true) {
+                await WidgetSettings.restoreDefaultsForStyle(WidgetSettings.style);
+                setState(() {});
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Valores de fábrica restablecidos para este diseño.')),
+                  );
+                }
               }
             },
           ),
@@ -566,7 +596,7 @@ class _StyleCard extends StatelessWidget {
         curve: Curves.easeInOut,
         width: 148,
         decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E),
+          color: isLight ? const Color(0xFFF5F5FA) : const Color(0xFF1C1C1E),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected ? _kBlue : cs.outlineVariant,
@@ -602,7 +632,7 @@ class _StyleCard extends StatelessWidget {
                         label,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: selected ? _kBlue : Colors.white70,
+                          color: selected ? _kBlue : (isLight ? Colors.black87 : Colors.white70),
                           fontSize: 13,
                         ),
                       ),
@@ -746,6 +776,9 @@ class _AndroidStylePreview extends StatelessWidget {
   const _AndroidStylePreview();
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final bg = dark ? const Color(0xFF1C1C1E) : Colors.white;
+    final fg = dark ? Colors.white : _kBlue;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -753,9 +786,9 @@ class _AndroidStylePreview extends StatelessWidget {
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _PreviewCircle(label: '+', bg: Colors.white, fg: _kBlue),
+            _PreviewCircle(label: '+', bg: bg, fg: fg, border: !dark),
             const Gap(10),
-            _PreviewCircle(label: '−', bg: Colors.white, fg: _kBlue),
+            _PreviewCircle(label: '−', bg: bg, fg: fg, border: !dark),
           ],
         ),
         const Gap(10),
@@ -794,10 +827,12 @@ class _IosStylePreview extends StatelessWidget {
   const _IosStylePreview();
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final baseAlpha = dark ? 55 : 100;
     final frostedBtn = BoxDecoration(
-      color: Colors.white.withAlpha(55),
+      color: (dark ? Colors.white : Colors.black).withAlpha(baseAlpha),
       shape: BoxShape.circle,
-      border: Border.all(color: Colors.white.withAlpha(80), width: 1),
+      border: Border.all(color: (dark ? Colors.white : Colors.black).withAlpha(dark ? 80 : 30), width: 1),
     );
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -810,14 +845,14 @@ class _IosStylePreview extends StatelessWidget {
               width: 44, height: 44,
               decoration: frostedBtn,
               alignment: Alignment.center,
-              child: const Text('+', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              child: Text('+', style: TextStyle(color: dark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
             ),
             const Gap(10),
             Container(
               width: 44, height: 44,
               decoration: frostedBtn,
               alignment: Alignment.center,
-              child: const Text('−', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              child: Text('−', style: TextStyle(color: dark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -826,9 +861,9 @@ class _IosStylePreview extends StatelessWidget {
           width: 32,
           height: 100,
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(55),
+            color: (dark ? Colors.white : Colors.black).withAlpha(baseAlpha),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withAlpha(80), width: 1),
+            border: Border.all(color: (dark ? Colors.white : Colors.black).withAlpha(dark ? 80 : 30), width: 1),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -839,7 +874,7 @@ class _IosStylePreview extends StatelessWidget {
                   width: double.infinity,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(200),
+                    color: (dark ? Colors.white : Colors.black).withAlpha(200),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -907,7 +942,7 @@ class _MiuiButton extends StatelessWidget {
       height: 46,
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(35),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(5.0), // ~15% roundness
         border: Border.all(color: accent.withAlpha(210), width: 1.5),
       ),
       alignment: Alignment.center,
@@ -979,7 +1014,7 @@ class _OneUiButton extends StatelessWidget {
       height: 40,
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(40),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10.0), // Squircle
       ),
       child: Icon(icon, color: accent, size: 22),
     );
@@ -1501,14 +1536,19 @@ class _PreviewCircle extends StatelessWidget {
   final String label;
   final Color bg;
   final Color fg;
-  const _PreviewCircle({required this.label, required this.bg, required this.fg});
+  final bool border;
+  const _PreviewCircle({required this.label, required this.bg, required this.fg, this.border = false});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 44,
       height: 44,
-      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+      decoration: BoxDecoration(
+        color: bg, 
+        shape: BoxShape.circle,
+        border: border ? Border.all(color: Colors.grey.withAlpha(50)) : null,
+      ),
       alignment: Alignment.center,
       child: Text(
         label,

@@ -199,11 +199,20 @@ class FloatingVolumeService : Service() {
     }
 
     private fun changeVolume(increase: Boolean) {
-        audioManager.adjustVolume(
-            if (increase) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
-            0,
-        )
-        newInMain { showVolumeIndicator() }
+        if (WidgetSettings.useSystemVolume) {
+            audioManager.adjustVolume(
+                if (increase) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
+                AudioManager.FLAG_SHOW_UI,
+            )
+            // Immediately hide our own indicator if it was shown previously
+            hideVolumeIndicator()
+        } else {
+            audioManager.adjustVolume(
+                if (increase) AudioManager.ADJUST_RAISE else AudioManager.ADJUST_LOWER,
+                0,
+            )
+            newInMain { showVolumeIndicator() }
+        }
     }
 
     private fun showVolumeIndicator(forcedVolume: Int? = null) {
