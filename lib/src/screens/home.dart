@@ -780,7 +780,7 @@ class _IosStylePreview extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(6),
                   child: Column(
                     children: [
                       Container(height: 18, color: Colors.white.withAlpha(200)),
@@ -789,7 +789,7 @@ class _IosStylePreview extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(Icons.volume_up_rounded, color: Colors.white.withAlpha(200), size: 16),
+              Text('VOL', style: TextStyle(color: Colors.white.withAlpha(200), fontSize: 10, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -818,11 +818,11 @@ class _MiuiStylePreview extends StatelessWidget {
         ),
         const Gap(10),
         Container(
-          width: 8,
+          width: 14,
           height: 80,
           decoration: BoxDecoration(
             color: Colors.white.withAlpha(40),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
@@ -831,7 +831,7 @@ class _MiuiStylePreview extends StatelessWidget {
                 height: 30,
                 decoration: BoxDecoration(
                   color: _orange,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(6),
                 ),
               ),
             ],
@@ -903,7 +903,7 @@ class _SamsungOneUiPreview extends StatelessWidget {
                 alignment: Alignment.topCenter,
                 child: Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Icon(Icons.volume_up_rounded, size: 14, color: Colors.white.withAlpha(220)),
+                  child: Text('VOL', style: TextStyle(color: Colors.white.withAlpha(220), fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -1037,6 +1037,8 @@ class _GradientCircle extends StatelessWidget {
 }
 
 // ── RGB Neon ────────────────────────────────────────────────────────────────
+import 'dart:math' as math;
+
 class _RgbNeonPreview extends StatefulWidget {
   const _RgbNeonPreview();
   @override
@@ -1050,8 +1052,8 @@ class _RgbNeonPreviewState extends State<_RgbNeonPreview>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))
-      ..repeat(reverse: true);
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500))
+      ..repeat();
   }
 
   @override
@@ -1066,8 +1068,13 @@ class _RgbNeonPreviewState extends State<_RgbNeonPreview>
       animation: _ctrl,
       builder: (_, __) {
         final t = _ctrl.value;
-        final cyan    = Color.lerp(const Color(0xFF00FFFF), const Color(0xFFFF00FF), t)!;
-        final magenta = Color.lerp(const Color(0xFFFF00FF), const Color(0xFF00FFFF), t)!;
+        final pingPong = (math.sin(t * math.pi * 2) * 0.5 + 0.5);
+        final cyan    = Color.lerp(const Color(0xFF00FFFF), const Color(0xFF00B4FF), pingPong)!;
+        final magenta = Color.lerp(const Color(0xFFFF00FF), const Color(0xFFFF0090), pingPong)!;
+        
+        final trueCyan = const Color(0xFF00FFFF);
+        final trueMagenta = const Color(0xFFFF00FF);
+
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1075,36 +1082,43 @@ class _RgbNeonPreviewState extends State<_RgbNeonPreview>
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _NeonButton(label: '+', glowColor: cyan),
+                _NeonButton(label: '+', glowColor: cyan, t: t, colors: [trueCyan, trueMagenta, trueCyan]),
                 const Gap(10),
-                _NeonButton(label: '−', glowColor: magenta),
+                _NeonButton(label: '−', glowColor: magenta, t: 1.0 - t, colors: [trueMagenta, trueCyan, trueMagenta]),
               ],
             ),
             const Gap(10),
             Container(
-              width: 14,
+              width: 18,
               height: 90,
               decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(7),
-                border: Border.all(color: cyan.withAlpha(200), width: 1.5),
+                borderRadius: BorderRadius.circular(9),
+                gradient: SweepGradient(
+                  colors: [trueCyan, trueMagenta, trueCyan],
+                  transform: GradientRotation(t * 2 * math.pi),
+                ),
                 boxShadow: [BoxShadow(color: cyan.withAlpha(120), blurRadius: 8)],
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Container(
-                    height: 45,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(6),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [magenta, cyan],
-                      ),
-                    ),
+              child: Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(7),
                   ),
-                ],
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Container(
+                        height: 45,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(5),
+                          color: magenta,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -1117,29 +1131,39 @@ class _RgbNeonPreviewState extends State<_RgbNeonPreview>
 class _NeonButton extends StatelessWidget {
   final String label;
   final Color glowColor;
-  const _NeonButton({required this.label, required this.glowColor});
+  final double t;
+  final List<Color> colors;
+  const _NeonButton({required this.label, required this.glowColor, required this.t, required this.colors});
+
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: Colors.black,
         shape: BoxShape.circle,
-        border: Border.all(color: glowColor, width: 2),
+        gradient: SweepGradient(
+          colors: colors,
+          transform: GradientRotation(t * 2 * math.pi),
+        ),
         boxShadow: [
-          BoxShadow(color: glowColor.withAlpha(220), blurRadius: 16, spreadRadius: 2),
-          BoxShadow(color: glowColor.withAlpha(90), blurRadius: 32, spreadRadius: 0),
+          BoxShadow(color: glowColor.withAlpha(160), blurRadius: 16, spreadRadius: 2),
         ],
       ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: TextStyle(
-          color: glowColor,
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-          height: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(2.5),
+        child: Container(
+          decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: glowColor,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              height: 1,
+            ),
+          ),
         ),
       ),
     );
@@ -1168,7 +1192,7 @@ class _CosmicPreviewState extends State<_CosmicPreview>
   void initState() {
     super.initState();
     _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))
-      ..repeat(reverse: true);
+      ..repeat();
   }
 
   @override
@@ -1180,9 +1204,15 @@ class _CosmicPreviewState extends State<_CosmicPreview>
       animation: _ctrl,
       builder: (_, __) {
         final t  = _ctrl.value;
-        final c1 = Color.lerp(_spaceBlue, const Color(0xFF1A0A3F), t)!;
-        final c2 = Color.lerp(_purple, _deepPurple, t)!;
-        final c3 = Color.lerp(_gold, _orange, t)!;
+        final pingPong = (math.sin(t * math.pi * 2) * 0.5 + 0.5);
+        final c1 = Color.lerp(_spaceBlue, const Color(0xFF1A0A3F), pingPong)!;
+        final c2 = Color.lerp(_purple, _deepPurple, pingPong)!;
+        final c3 = Color.lerp(_gold, _orange, pingPong)!;
+        
+        final borderColors = [
+            _purple, Colors.transparent, _gold, Colors.transparent, _purple
+        ];
+        
         return Stack(
           children: [
             Positioned.fill(
@@ -1197,25 +1227,45 @@ class _CosmicPreviewState extends State<_CosmicPreview>
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _GradientCircle(label: '+', colors: [c1, c2]),
+                    _CosmicButton(label: '+', bgColors: [c1, c2], borderColors: borderColors, t: t),
                     const Gap(10),
-                    _GradientCircle(label: '−', colors: [c2, c3]),
+                    _CosmicButton(label: '−', bgColors: [c2, c3], borderColors: borderColors, t: t),
                   ],
                 ),
                 const Gap(10),
                 Container(
-                  width: 12,
+                  width: 18,
                   height: 90,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(6),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [c3, c2, c1],
+                    borderRadius: BorderRadius.circular(9),
+                    gradient: SweepGradient(
+                      colors: borderColors,
+                      transform: GradientRotation(t * 2 * math.pi),
                     ),
                     boxShadow: [
                       BoxShadow(color: c2.withAlpha(160), blurRadius: 14),
                     ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(2.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D0221),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Container(
+                            height: 45,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(5),
+                                color: c2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1223,6 +1273,46 @@ class _CosmicPreviewState extends State<_CosmicPreview>
           ],
         );
       },
+    );
+  }
+}
+
+class _CosmicButton extends StatelessWidget {
+  final String label;
+  final List<Color> bgColors;
+  final List<Color> borderColors;
+  final double t;
+
+  const _CosmicButton({
+    required this.label, required this.bgColors, required this.borderColors, required this.t
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: SweepGradient(
+          colors: borderColors,
+          transform: GradientRotation(t * 2 * math.pi),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(2.0),
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(colors: bgColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, height: 1),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1389,11 +1479,11 @@ class _SlimSliderPreview extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Container(
-            width: 3,
+            width: 8,
             height: 72,
             decoration: BoxDecoration(
               color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
           Positioned(
@@ -1406,7 +1496,7 @@ class _SlimSliderPreview extends StatelessWidget {
           ),
           const Positioned(
             bottom: 10,
-            child: Icon(Icons.music_note_rounded, size: 12, color: _kBlue),
+            child: Text('VOL', style: TextStyle(color: _kBlue, fontSize: 10, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1424,8 +1514,7 @@ class _FatSliderPreview extends StatelessWidget {
         color: _kBlue,
         borderRadius: BorderRadius.circular(18),
       ),
-      alignment: Alignment.center,
-      child: const Icon(Icons.music_note_rounded, size: 18, color: Colors.white),
+      child: const Text('VOL', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
     );
   }
 }

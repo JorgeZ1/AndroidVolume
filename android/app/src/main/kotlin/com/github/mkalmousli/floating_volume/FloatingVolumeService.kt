@@ -380,7 +380,11 @@ class FloatingVolumeService : Service() {
                 .drop(1) // Skip the first emission when the service starts
                 .collect { volume ->
                     inMain {
-                        showVolumeIndicator(volume)
+                        // Only update our indicator if it is currently visible (i.e. user just tapped our buttons)
+                        // If it's hidden, physical buttons are used and we let the system UI handle it
+                        if (hideIndicatorJob?.isActive == true) {
+                            showVolumeIndicator(volume)
+                        }
                     }
                 }
         }

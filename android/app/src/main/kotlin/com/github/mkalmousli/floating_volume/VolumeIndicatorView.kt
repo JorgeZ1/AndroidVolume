@@ -30,11 +30,11 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
     }
     private val trackBg = GradientDrawable().apply {
         shape        = GradientDrawable.RECTANGLE
-        cornerRadius = dp(3).toFloat()
+        cornerRadius = dp(4).toFloat()
     }
     private val fillBg  = GradientDrawable().apply {
         shape        = GradientDrawable.RECTANGLE
-        cornerRadius = dp(3).toFloat()
+        cornerRadius = dp(4).toFloat()
     }
 
     // ── Child views ───────────────────────────────────────────────────────────
@@ -49,8 +49,9 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
     private val fillView  = android.view.View(context).apply { background = fillBg }
 
     private val iconLabel = TextView(context).apply {
-        text     = "♪"
-        textSize = 12f
+        text     = "VOL"
+        textSize = 10f
+        typeface = Typeface.DEFAULT_BOLD
         gravity  = Gravity.CENTER
     }
 
@@ -80,17 +81,17 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         orientation = VERTICAL
         gravity     = Gravity.CENTER_HORIZONTAL
         background  = cardBg
-        setPadding(dp(6), dp(8), dp(6), dp(8))
+        setPadding(dp(4), dp(8), dp(4), dp(8))
         elevation   = 0f  // no shadow — keep it clean
 
-        val w = dp(36)
+        val w = dp(32)
 
         addView(numberLabel, LayoutParams(w, LayoutParams.WRAP_CONTENT))
-        addView(android.view.View(context), LayoutParams(w, dp(4))) // spacer
+        addView(android.view.View(context), LayoutParams(w, dp(6))) // spacer
 
         // Track + fill stacked in a FrameLayout
         val trackFrame = FrameLayout(context)
-        val trackW = dp(4)
+        val trackW = dp(8)
         val trackH = dp(TRACK_H_DP)
 
         trackFrame.addView(trackView, FrameLayout.LayoutParams(trackW, trackH).also {
@@ -102,7 +103,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
 
         addView(trackFrame, LayoutParams(w, trackH))
 
-        addView(android.view.View(context), LayoutParams(w, dp(4))) // spacer
+        addView(android.view.View(context), LayoutParams(w, dp(6))) // spacer
         addView(iconLabel, LayoutParams(w, LayoutParams.WRAP_CONTENT))
 
         applyStyle()
@@ -159,8 +160,8 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
             fill  = Color.WHITE,
             text  = Color.WHITE,
         )
-        fillBg.cornerRadius  = dp(3).toFloat()
-        trackBg.cornerRadius = dp(3).toFloat()
+        fillBg.cornerRadius  = dp(4).toFloat()
+        trackBg.cornerRadius = dp(4).toFloat()
     }
 
     private fun applyIos() {
@@ -323,8 +324,8 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         val text  = if (isDark) Color.WHITE else Color.parseColor("#1A1A1A")
         apply(card, track, fill, text)
         cardBg.cornerRadius  = dp(12).toFloat()
-        trackBg.cornerRadius = dp(3).toFloat()
-        fillBg.cornerRadius  = dp(3).toFloat()
+        trackBg.cornerRadius = dp(4).toFloat()
+        fillBg.cornerRadius  = dp(4).toFloat()
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
