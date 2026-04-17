@@ -1888,7 +1888,6 @@ class _FloatingButtonsSettingsCard extends StatelessWidget {
   static const _rectStyles = {
     WidgetStyle.miui,
     WidgetStyle.samsungOneUi,
-    WidgetStyle.cards,
   };
 
   @override

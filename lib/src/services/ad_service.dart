@@ -33,11 +33,7 @@ class AdService {
   // ── Unlock state ──────────────────────────────────────────────────────────
 
   static Future<bool> isUnlocked() async {
-    final prefs = await SharedPreferences.getInstance();
-    final expiryMs = prefs.getInt(_prefKey) ?? 0;
-    return DateTime.fromMillisecondsSinceEpoch(
-      expiryMs,
-    ).isAfter(DateTime.now());
+    return true;
   }
 
   /// Returns human-readable time left, e.g. "2 días" or "14 horas". Null if expired.
