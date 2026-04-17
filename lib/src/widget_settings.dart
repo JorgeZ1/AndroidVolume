@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 enum WidgetColorMode { auto, blue, dark }
 
 enum WidgetStyle {
@@ -75,7 +76,6 @@ class WidgetSettings {
     await _ch.invokeMethod('setCreativeGlowIntensity', {'value': value});
   }
 
-
   static int buttonSize = 52;
   static Future<void> setButtonSize(int value) async {
     buttonSize = value;
@@ -141,7 +141,7 @@ class WidgetSettings {
         _r = 0.2; // rounded square
         break;
       case WidgetStyle.samsungOneUi:
-        _r = 0.3; 
+        _r = 0.3;
         break;
       case WidgetStyle.android12:
       case WidgetStyle.ios:
@@ -167,4 +167,3 @@ class WidgetSettings {
     await setIndicatorAnimation("fade");
   }
 }
-

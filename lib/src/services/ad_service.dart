@@ -35,7 +35,9 @@ class AdService {
   static Future<bool> isUnlocked() async {
     final prefs = await SharedPreferences.getInstance();
     final expiryMs = prefs.getInt(_prefKey) ?? 0;
-    return DateTime.fromMillisecondsSinceEpoch(expiryMs).isAfter(DateTime.now());
+    return DateTime.fromMillisecondsSinceEpoch(
+      expiryMs,
+    ).isAfter(DateTime.now());
   }
 
   /// Returns human-readable time left, e.g. "2 días" or "14 horas". Null if expired.
@@ -104,8 +106,14 @@ class AdService {
         adUnitId: _rewardedAdId,
         request: const AdRequest(),
         rewardedAdLoadCallback: RewardedAdLoadCallback(
-          onAdLoaded: (ad) { _ad = ad; _loading = false; },
-          onAdFailedToLoad: (_) { _ad = null; _loading = false; },
+          onAdLoaded: (ad) {
+            _ad = ad;
+            _loading = false;
+          },
+          onAdFailedToLoad: (_) {
+            _ad = null;
+            _loading = false;
+          },
         ),
       );
     } catch (_) {
@@ -127,7 +135,9 @@ class AdService {
           } catch (_) {}
           if (!done.isCompleted) done.complete();
         },
-        (_) { if (!done.isCompleted) done.complete(); },
+        (_) {
+          if (!done.isCompleted) done.complete();
+        },
       );
       await done.future.timeout(const Duration(seconds: 10), onTimeout: () {});
     } catch (_) {}

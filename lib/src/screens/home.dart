@@ -15,8 +15,10 @@ import 'package:floating_volume/src/bloc/status/event.dart' as estatus;
 import 'package:floating_volume/src/bloc/status/state.dart' as sstatus;
 
 import 'package:floating_volume/src/bloc/permissions/bloc.dart' as bpermissions;
-import 'package:floating_volume/src/bloc/permissions/event.dart' as epermissions;
-import 'package:floating_volume/src/bloc/permissions/state.dart' as spermissions;
+import 'package:floating_volume/src/bloc/permissions/event.dart'
+    as epermissions;
+import 'package:floating_volume/src/bloc/permissions/state.dart'
+    as spermissions;
 
 import 'package:floating_volume/src/bloc/theme/bloc.dart' as btheme;
 import 'package:floating_volume/src/bloc/theme/state.dart' as stheme;
@@ -29,30 +31,30 @@ const _kBlue = Color(0xFF2979FF);
 // ---------------------------------------------------------------------------
 extension WidgetStyleExt on WidgetStyle {
   String get label => switch (this) {
-        WidgetStyle.android      => 'Android',
-        WidgetStyle.android12    => 'Android 12',
-        WidgetStyle.ios          => 'iOS',
-        WidgetStyle.miui         => 'MIUI',
-        WidgetStyle.samsungOneUi => 'One UI',
-        WidgetStyle.rgbAurora    => 'RGB Aurora',
-        WidgetStyle.rgbNeon      => 'RGB Neon',
-        WidgetStyle.cosmic       => 'Cosmic',
-        WidgetStyle.lava         => 'Lava',
-      };
+    WidgetStyle.android => 'Android',
+    WidgetStyle.android12 => 'Android 12',
+    WidgetStyle.ios => 'iOS',
+    WidgetStyle.miui => 'MIUI',
+    WidgetStyle.samsungOneUi => 'One UI',
+    WidgetStyle.rgbAurora => 'RGB Aurora',
+    WidgetStyle.rgbNeon => 'RGB Neon',
+    WidgetStyle.cosmic => 'Cosmic',
+    WidgetStyle.lava => 'Lava',
+  };
 
   bool get isSpecial => index >= 5; // rgbAurora, rgbNeon, cosmic, lava
 
   Widget get preview => switch (this) {
-        WidgetStyle.android      => const _AndroidStylePreview(),
-        WidgetStyle.android12    => const _Android12StylePreview(),
-        WidgetStyle.ios          => const _IosStylePreview(),
-        WidgetStyle.miui         => const _MiuiStylePreview(),
-        WidgetStyle.samsungOneUi => const _SamsungOneUiPreview(),
-        WidgetStyle.rgbAurora    => const _RgbAuroraPreview(),
-        WidgetStyle.rgbNeon      => const _RgbNeonPreview(),
-        WidgetStyle.cosmic       => const _CosmicPreview(),
-        WidgetStyle.lava         => const _LavaPreview(),
-      };
+    WidgetStyle.android => const _AndroidStylePreview(),
+    WidgetStyle.android12 => const _Android12StylePreview(),
+    WidgetStyle.ios => const _IosStylePreview(),
+    WidgetStyle.miui => const _MiuiStylePreview(),
+    WidgetStyle.samsungOneUi => const _SamsungOneUiPreview(),
+    WidgetStyle.rgbAurora => const _RgbAuroraPreview(),
+    WidgetStyle.rgbNeon => const _RgbNeonPreview(),
+    WidgetStyle.cosmic => const _CosmicPreview(),
+    WidgetStyle.lava => const _LavaPreview(),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -71,7 +73,8 @@ class HomeScreen extends StatelessWidget {
           );
         }
 
-        final requiredGranted = state.overlayPermission.status.isGranted &&
+        final requiredGranted =
+            state.overlayPermission.status.isGranted &&
             state.batteryOptimizationPermission.status.isGranted;
 
         if (!requiredGranted) return const _PermissionsView();
@@ -117,20 +120,29 @@ class _PermissionsView extends StatelessWidget {
                       subtitle:
                           'Para renderizar los botones de volumen sobre otras aplicaciones.',
                       isGranted: state.overlayPermission.status.isGranted,
-                      onTap: () => context
-                          .read<bpermissions.Bloc>()
-                          .add(epermissions.Event.requestOverlayPermission),
+                      onTap:
+                          () => context.read<bpermissions.Bloc>().add(
+                            epermissions.Event.requestOverlayPermission,
+                          ),
                     ),
-                    Divider(height: 1, indent: 16, endIndent: 16, color: cs.outlineVariant),
+                    Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: cs.outlineVariant,
+                    ),
                     _PermissionRow(
                       title: 'Ejecutar en segundo plano',
                       subtitle:
                           'Para seguir mostrando los botones de volumen en la pantalla.',
                       isGranted:
                           state.batteryOptimizationPermission.status.isGranted,
-                      onTap: () => context.read<bpermissions.Bloc>().add(
-                          epermissions
-                              .Event.requestBatteryOptimizationPermission),
+                      onTap:
+                          () => context.read<bpermissions.Bloc>().add(
+                            epermissions
+                                .Event
+                                .requestBatteryOptimizationPermission,
+                          ),
                     ),
                   ],
                 ),
@@ -149,9 +161,10 @@ class _PermissionsView extends StatelessWidget {
                   subtitle:
                       'Para alternar los botones de volumen desde la notificación.',
                   isGranted: state.notificationPermission.status.isGranted,
-                  onTap: () => context
-                      .read<bpermissions.Bloc>()
-                      .add(epermissions.Event.requestNotificationPermission),
+                  onTap:
+                      () => context.read<bpermissions.Bloc>().add(
+                        epermissions.Event.requestNotificationPermission,
+                      ),
                 ),
               ),
             ],
@@ -170,9 +183,9 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 }
@@ -196,9 +209,10 @@ class _PermissionRow extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
       subtitle: Text(subtitle),
-      trailing: isGranted
-          ? Icon(Icons.check_circle_rounded, color: Colors.green.shade600)
-          : const Icon(Icons.chevron_right_rounded),
+      trailing:
+          isGranted
+              ? Icon(Icons.check_circle_rounded, color: Colors.green.shade600)
+              : const Icon(Icons.chevron_right_rounded),
       onTap: isGranted ? null : onTap,
     );
   }
@@ -232,8 +246,9 @@ class _MainViewState extends State<_MainView> {
     if (_styleLoaded) return; // guard against re-entry
     final prefs = await SharedPreferences.getInstance();
     final name = prefs.getString('widget_style');
-    final style = WidgetStyle.values.where((s) => s.name == name).firstOrNull
-        ?? WidgetStyle.android;
+    final style =
+        WidgetStyle.values.where((s) => s.name == name).firstOrNull ??
+        WidgetStyle.android;
     final pinned = prefs.getBool('widget_pinned') ?? false;
     final sysVol = prefs.getBool('widget_use_sys_vol') ?? false;
     final crtSpeed = prefs.getDouble('widget_crt_speed') ?? 1.0;
@@ -249,11 +264,21 @@ class _MainViewState extends State<_MainView> {
         _unlockTimeLeft = timeLeft;
         _styleLoaded = true;
       });
-      try { await WidgetSettings.setWidgetStyle(style); } catch (_) {}
-      try { await WidgetSettings.setPinned(pinned); } catch (_) {}
-      try { await WidgetSettings.setUseSystemVolume(sysVol); } catch (_) {}
-      try { await WidgetSettings.setCreativeAnimSpeed(crtSpeed); } catch (_) {}
-      try { await WidgetSettings.setCreativeGlowIntensity(crtGlow); } catch (_) {}
+      try {
+        await WidgetSettings.setWidgetStyle(style);
+      } catch (_) {}
+      try {
+        await WidgetSettings.setPinned(pinned);
+      } catch (_) {}
+      try {
+        await WidgetSettings.setUseSystemVolume(sysVol);
+      } catch (_) {}
+      try {
+        await WidgetSettings.setCreativeAnimSpeed(crtSpeed);
+      } catch (_) {}
+      try {
+        await WidgetSettings.setCreativeGlowIntensity(crtGlow);
+      } catch (_) {}
     }
   }
 
@@ -261,19 +286,25 @@ class _MainViewState extends State<_MainView> {
     setState(() => _selectedStyle = style);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('widget_style', style.name);
-    try { await WidgetSettings.setWidgetStyle(style); } catch (_) {}
+    try {
+      await WidgetSettings.setWidgetStyle(style);
+    } catch (_) {}
   }
 
   Future<void> _togglePin(bool value) async {
     setState(() => _isPinned = value);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('widget_pinned', value);
-    try { await WidgetSettings.setPinned(value); } catch (_) {}
+    try {
+      await WidgetSettings.setPinned(value);
+    } catch (_) {}
   }
 
   Future<void> _toggleSysVol(bool value) async {
     setState(() => _useSystemVolume = value);
-    try { await WidgetSettings.setUseSystemVolume(value); } catch (_) {}
+    try {
+      await WidgetSettings.setUseSystemVolume(value);
+    } catch (_) {}
   }
 
   void _showUnlockSheet(WidgetStyle style) {
@@ -283,19 +314,20 @@ class _MainViewState extends State<_MainView> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _UnlockSheet(
-        style: style,
-        onUnlocked: () async {
-          final timeLeft = await AdService.timeLeftLabel();
-          if (mounted) {
-            setState(() {
-              _specialUnlocked = true;
-              _unlockTimeLeft = timeLeft;
-            });
-            _selectStyle(style);
-          }
-        },
-      ),
+      builder:
+          (_) => _UnlockSheet(
+            style: style,
+            onUnlocked: () async {
+              final timeLeft = await AdService.timeLeftLabel();
+              if (mounted) {
+                setState(() {
+                  _specialUnlocked = true;
+                  _unlockTimeLeft = timeLeft;
+                });
+                _selectStyle(style);
+              }
+            },
+          ),
     );
   }
 
@@ -328,22 +360,33 @@ class _MainViewState extends State<_MainView> {
                       secondary: const Icon(Icons.visibility_outlined),
                       title: const Text('Mostrar botones de volumen'),
                       value: state.isEnabled,
-                      onChanged: loading
-                          ? null
-                          : (_) => context
-                              .read<bstatus.Bloc>()
-                              .add(estatus.Event.toggle),
+                      onChanged:
+                          loading
+                              ? null
+                              : (_) => context.read<bstatus.Bloc>().add(
+                                estatus.Event.toggle,
+                              ),
                     );
                   },
                 ),
-                Divider(height: 1, indent: 16, endIndent: 16, color: cs.outlineVariant),
+                Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: cs.outlineVariant,
+                ),
                 SwitchListTile(
                   secondary: const Icon(Icons.push_pin_outlined),
                   title: const Text('Botones de pin en su posición'),
                   value: _isPinned,
                   onChanged: _togglePin,
                 ),
-                Divider(height: 1, indent: 16, endIndent: 16, color: cs.outlineVariant),
+                Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: cs.outlineVariant,
+                ),
                 SwitchListTile(
                   secondary: const Icon(Icons.tune_outlined),
                   title: const Text('Usar indicador nativo del sistema'),
@@ -357,7 +400,6 @@ class _MainViewState extends State<_MainView> {
           const Gap(12),
 
           // ── Widget appearance card moved to bottom ──
-
           const Gap(24),
 
           // ── Style selector ───────────────────────────────────────────────
@@ -365,22 +407,23 @@ class _MainViewState extends State<_MainView> {
           const Gap(12),
           SizedBox(
             height: 190,
-            child: _styleLoaded
-                ? ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 5, // classic styles
-                    separatorBuilder: (_, __) => const Gap(12),
-                    itemBuilder: (context, index) {
-                      final style = WidgetStyle.values[index];
-                      return _StyleCard(
-                        label: style.label,
-                        selected: _selectedStyle == style,
-                        preview: style.preview,
-                        onTap: () => _selectStyle(style),
-                      );
-                    },
-                  )
-                : const Center(child: CircularProgressIndicator()),
+            child:
+                _styleLoaded
+                    ? ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: 5, // classic styles
+                      separatorBuilder: (_, __) => const Gap(12),
+                      itemBuilder: (context, index) {
+                        final style = WidgetStyle.values[index];
+                        return _StyleCard(
+                          label: style.label,
+                          selected: _selectedStyle == style,
+                          preview: style.preview,
+                          onTap: () => _selectStyle(style),
+                        );
+                      },
+                    )
+                    : const Center(child: CircularProgressIndicator()),
           ),
 
           const Gap(20),
@@ -392,16 +435,24 @@ class _MainViewState extends State<_MainView> {
               if (_specialUnlocked && _unlockTimeLeft != null) ...[
                 const Gap(8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFD700).withAlpha(30),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFFFD700).withAlpha(100)),
+                    border: Border.all(
+                      color: const Color(0xFFFFD700).withAlpha(100),
+                    ),
                   ),
                   child: Text(
                     '⏱ $_unlockTimeLeft',
                     style: const TextStyle(
-                      color: Color(0xFFFFD700), fontSize: 11, fontWeight: FontWeight.w600),
+                      color: Color(0xFFFFD700),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -410,26 +461,29 @@ class _MainViewState extends State<_MainView> {
           const Gap(12),
           SizedBox(
             height: 190,
-            child: _styleLoaded
-                ? ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 4, // rgbAurora, rgbNeon, cosmic, lava
-                    separatorBuilder: (_, __) => const Gap(12),
-                    itemBuilder: (context, index) {
-                      final style = WidgetStyle.values[5 + index];
-                      final locked = !_specialUnlocked;
-                      return _StyleCard(
-                        label: style.label,
-                        selected: _selectedStyle == style,
-                        locked: locked,
-                        preview: style.preview,
-                        onTap: () => locked
-                            ? _showUnlockSheet(style)
-                            : _selectStyle(style),
-                      );
-                    },
-                  )
-                : const Center(child: CircularProgressIndicator()),
+            child:
+                _styleLoaded
+                    ? ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: 4, // rgbAurora, rgbNeon, cosmic, lava
+                      separatorBuilder: (_, __) => const Gap(12),
+                      itemBuilder: (context, index) {
+                        final style = WidgetStyle.values[5 + index];
+                        final locked = !_specialUnlocked;
+                        return _StyleCard(
+                          label: style.label,
+                          selected: _selectedStyle == style,
+                          locked: locked,
+                          preview: style.preview,
+                          onTap:
+                              () =>
+                                  locked
+                                      ? _showUnlockSheet(style)
+                                      : _selectStyle(style),
+                        );
+                      },
+                    )
+                    : const Center(child: CircularProgressIndicator()),
           ),
 
           const Gap(24),
@@ -449,8 +503,8 @@ class _MainViewState extends State<_MainView> {
                   Text(
                     'Apariencia',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: cs.onSurface.withAlpha(153),
-                        ),
+                      color: cs.onSurface.withAlpha(153),
+                    ),
                   ),
                   const Gap(12),
                   BlocBuilder<btheme.Bloc, stheme.State>(
@@ -479,9 +533,10 @@ class _MainViewState extends State<_MainView> {
                           ),
                         ],
                         selected: {state.theme},
-                        onSelectionChanged: (value) => context
-                            .read<btheme.Bloc>()
-                            .add(etheme.Change(value.first)),
+                        onSelectionChanged:
+                            (value) => context.read<btheme.Bloc>().add(
+                              etheme.Change(value.first),
+                            ),
                         showSelectedIcon: false,
                       );
                     },
@@ -496,17 +551,11 @@ class _MainViewState extends State<_MainView> {
           // ── Advanced Personalization ──────────────────────────────────────
           _SectionLabel('Opciones Avanzadas'),
           const Gap(12),
-          _FloatingButtonsSettingsCard(
-            onChanged: () => setState(() {}),
-          ),
+          _FloatingButtonsSettingsCard(onChanged: () => setState(() {})),
           const Gap(12),
-          _VolumeIndicatorSettingsCard(
-            onChanged: () => setState(() {}),
-          ),
+          _VolumeIndicatorSettingsCard(onChanged: () => setState(() {})),
           const Gap(12),
-          _CreativeSettingsCard(
-            onChanged: () => setState(() {}),
-          ),
+          _CreativeSettingsCard(onChanged: () => setState(() {})),
           const Gap(16),
           FilledButton.icon(
             icon: const Icon(Icons.restore_rounded),
@@ -519,28 +568,37 @@ class _MainViewState extends State<_MainView> {
             onPressed: () async {
               final confirm = await showDialog<bool>(
                 context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('¿Restaurar todo?'),
-                  content: const Text('Se perderán las posiciones, tamaños y opacidades que has configurado para este diseño.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancelar'),
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('¿Restaurar todo?'),
+                      content: const Text(
+                        'Se perderán las posiciones, tamaños y opacidades que has configurado para este diseño.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Aceptar'),
+                        ),
+                      ],
                     ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Aceptar'),
-                    ),
-                  ],
-                ),
               );
 
               if (confirm == true) {
-                await WidgetSettings.restoreDefaultsForStyle(WidgetSettings.style);
+                await WidgetSettings.restoreDefaultsForStyle(
+                  WidgetSettings.style,
+                );
                 setState(() {});
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Valores de fábrica restablecidos para este diseño.')),
+                    const SnackBar(
+                      content: Text(
+                        'Valores de fábrica restablecidos para este diseño.',
+                      ),
+                    ),
                   );
                 }
               }
@@ -554,18 +612,21 @@ class _MainViewState extends State<_MainView> {
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
             ),
             child: ListTile(
               leading: const Icon(Icons.privacy_tip_outlined),
               title: const Text('Política de privacidad'),
               trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PrivacyPolicyScreen(),
-                ),
-              ),
+              onTap:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PrivacyPolicyScreen(),
+                    ),
+                  ),
             ),
           ),
 
@@ -575,7 +636,6 @@ class _MainViewState extends State<_MainView> {
           const _OemCompatBanner(),
 
           const Gap(32),
-
         ],
       ),
     );
@@ -617,10 +677,23 @@ class _StyleCard extends StatelessWidget {
             color: selected ? _kBlue : cs.outlineVariant,
             width: selected ? 2.5 : 1,
           ),
-          boxShadow: selected
-              ? [BoxShadow(color: _kBlue.withAlpha(80), blurRadius: 10, spreadRadius: 1)]
-              : isLight
-                  ? [BoxShadow(color: Colors.black.withAlpha(40), blurRadius: 8, offset: const Offset(0, 2))]
+          boxShadow:
+              selected
+                  ? [
+                    BoxShadow(
+                      color: _kBlue.withAlpha(80),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                  : isLight
+                  ? [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(40),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
                   : [],
         ),
         child: Stack(
@@ -640,14 +713,21 @@ class _StyleCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (selected) ...[
-                        const Icon(Icons.check_circle_rounded, size: 13, color: _kBlue),
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          size: 13,
+                          color: _kBlue,
+                        ),
                         const Gap(4),
                       ],
                       Text(
                         label,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: selected ? _kBlue : (isLight ? Colors.black87 : Colors.white70),
+                          color:
+                              selected
+                                  ? _kBlue
+                                  : (isLight ? Colors.black87 : Colors.white70),
                           fontSize: 13,
                         ),
                       ),
@@ -666,16 +746,25 @@ class _StyleCard extends StatelessWidget {
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.lock_rounded, color: Color(0xFFFFD700), size: 26),
+                      Icon(
+                        Icons.lock_rounded,
+                        color: Color(0xFFFFD700),
+                        size: 26,
+                      ),
                       Gap(6),
-                      Text('Especial',
-                          style: TextStyle(
-                              color: Color(0xFFFFD700),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold)),
+                      Text(
+                        'Especial',
+                        style: TextStyle(
+                          color: Color(0xFFFFD700),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       Gap(3),
-                      Text('Ver anuncio',
-                          style: TextStyle(color: Colors.white70, fontSize: 10)),
+                      Text(
+                        'Ver anuncio',
+                        style: TextStyle(color: Colors.white70, fontSize: 10),
+                      ),
                     ],
                   ),
                 ),
@@ -710,7 +799,9 @@ class _UnlockSheetState extends State<_UnlockSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 24, right: 24, top: 24,
+        left: 24,
+        right: 24,
+        top: 24,
         bottom: MediaQuery.of(context).viewInsets.bottom + 32,
       ),
       child: Column(
@@ -718,24 +809,33 @@ class _UnlockSheetState extends State<_UnlockSheet> {
         children: [
           // Handle bar
           Container(
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
               color: cs.onSurfaceVariant.withAlpha(60),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const Icon(Icons.auto_awesome_rounded, color: Color(0xFFFFD700), size: 40),
+          const Icon(
+            Icons.auto_awesome_rounded,
+            color: Color(0xFFFFD700),
+            size: 40,
+          ),
           const Gap(12),
           Text(
             'Estilo Especial: ${widget.style.label}',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const Gap(8),
           Text(
             'Ve un breve anuncio para desbloquear todos los\nestilos especiales durante 3 días.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
           const Gap(24),
@@ -769,7 +869,10 @@ class _UnlockSheetState extends State<_UnlockSheet> {
   }
 
   Future<void> _watchAd() async {
-    setState(() { _loading = true; _failed = false; });
+    setState(() {
+      _loading = true;
+      _failed = false;
+    });
     final shown = await AdService.showAd(
       onRewarded: () {
         if (mounted) Navigator.pop(context);
@@ -777,7 +880,10 @@ class _UnlockSheetState extends State<_UnlockSheet> {
       },
     );
     if (mounted && !shown) {
-      setState(() { _loading = false; _failed = true; });
+      setState(() {
+        _loading = false;
+        _failed = true;
+      });
     }
   }
 }
@@ -847,7 +953,10 @@ class _IosStylePreview extends StatelessWidget {
     final frostedBtn = BoxDecoration(
       color: (dark ? Colors.white : Colors.black).withAlpha(baseAlpha),
       shape: BoxShape.circle,
-      border: Border.all(color: (dark ? Colors.white : Colors.black).withAlpha(dark ? 80 : 30), width: 1),
+      border: Border.all(
+        color: (dark ? Colors.white : Colors.black).withAlpha(dark ? 80 : 30),
+        width: 1,
+      ),
     );
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -857,17 +966,33 @@ class _IosStylePreview extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 44, height: 44,
+              width: 44,
+              height: 44,
               decoration: frostedBtn,
               alignment: Alignment.center,
-              child: Text('+', style: TextStyle(color: dark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
+              child: Text(
+                '+',
+                style: TextStyle(
+                  color: dark ? Colors.white : Colors.black87,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const Gap(10),
             Container(
-              width: 44, height: 44,
+              width: 44,
+              height: 44,
               decoration: frostedBtn,
               alignment: Alignment.center,
-              child: Text('−', style: TextStyle(color: dark ? Colors.white : Colors.black87, fontSize: 22, fontWeight: FontWeight.bold)),
+              child: Text(
+                '−',
+                style: TextStyle(
+                  color: dark ? Colors.white : Colors.black87,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -878,7 +1003,12 @@ class _IosStylePreview extends StatelessWidget {
           decoration: BoxDecoration(
             color: (dark ? Colors.white : Colors.black).withAlpha(baseAlpha),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: (dark ? Colors.white : Colors.black).withAlpha(dark ? 80 : 30), width: 1),
+            border: Border.all(
+              color: (dark ? Colors.white : Colors.black).withAlpha(
+                dark ? 80 : 30,
+              ),
+              width: 1,
+            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -963,7 +1093,12 @@ class _MiuiButton extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         label,
-        style: TextStyle(color: accent, fontSize: 22, fontWeight: FontWeight.bold, height: 1),
+        style: TextStyle(
+          color: accent,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          height: 1,
+        ),
       ),
     );
   }
@@ -1007,7 +1142,14 @@ class _SamsungOneUiPreview extends StatelessWidget {
                 alignment: Alignment.topCenter,
                 child: Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text('VOL', style: TextStyle(color: Colors.white.withAlpha(220), fontSize: 10, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'VOL',
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(220),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -1054,8 +1196,10 @@ class _RgbAuroraPreviewState extends State<_RgbAuroraPreview>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 7))
-      ..repeat();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 7),
+    )..repeat();
   }
 
   @override
@@ -1115,7 +1259,7 @@ class _GradientCircle extends StatelessWidget {
     required this.label,
     required this.colors,
     this.begin = Alignment.topLeft,
-    this.end   = Alignment.bottomRight,
+    this.end = Alignment.bottomRight,
   });
   @override
   Widget build(BuildContext context) {
@@ -1155,8 +1299,10 @@ class _RgbNeonPreviewState extends State<_RgbNeonPreview>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500))
-      ..repeat();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    )..repeat();
   }
 
   @override
@@ -1172,9 +1318,19 @@ class _RgbNeonPreviewState extends State<_RgbNeonPreview>
       builder: (_, __) {
         final t = _ctrl.value;
         final pingPong = (math.sin(t * math.pi * 2) * 0.5 + 0.5);
-        final cyan    = Color.lerp(const Color(0xFF00FFFF), const Color(0xFF00B4FF), pingPong)!;
-        final magenta = Color.lerp(const Color(0xFFFF00FF), const Color(0xFFFF0090), pingPong)!;
-        
+        final cyan =
+            Color.lerp(
+              const Color(0xFF00FFFF),
+              const Color(0xFF00B4FF),
+              pingPong,
+            )!;
+        final magenta =
+            Color.lerp(
+              const Color(0xFFFF00FF),
+              const Color(0xFFFF0090),
+              pingPong,
+            )!;
+
         final trueCyan = const Color(0xFF00FFFF);
         final trueMagenta = const Color(0xFFFF00FF);
 
@@ -1185,9 +1341,19 @@ class _RgbNeonPreviewState extends State<_RgbNeonPreview>
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _NeonButton(label: '+', glowColor: cyan, t: t, colors: [trueCyan, trueMagenta, trueCyan]),
+                _NeonButton(
+                  label: '+',
+                  glowColor: cyan,
+                  t: t,
+                  colors: [trueCyan, trueMagenta, trueCyan],
+                ),
                 const Gap(10),
-                _NeonButton(label: '−', glowColor: magenta, t: 1.0 - t, colors: [trueMagenta, trueCyan, trueMagenta]),
+                _NeonButton(
+                  label: '−',
+                  glowColor: magenta,
+                  t: 1.0 - t,
+                  colors: [trueMagenta, trueCyan, trueMagenta],
+                ),
               ],
             ),
             const Gap(10),
@@ -1200,7 +1366,9 @@ class _RgbNeonPreviewState extends State<_RgbNeonPreview>
                   colors: [trueCyan, trueMagenta, trueCyan],
                   transform: GradientRotation(t * 2 * math.pi),
                 ),
-                boxShadow: [BoxShadow(color: cyan.withAlpha(120), blurRadius: 8)],
+                boxShadow: [
+                  BoxShadow(color: cyan.withAlpha(120), blurRadius: 8),
+                ],
               ),
               child: Padding(
                 padding: const EdgeInsets.all(2.0),
@@ -1236,7 +1404,12 @@ class _NeonButton extends StatelessWidget {
   final Color glowColor;
   final double t;
   final List<Color> colors;
-  const _NeonButton({required this.label, required this.glowColor, required this.t, required this.colors});
+  const _NeonButton({
+    required this.label,
+    required this.glowColor,
+    required this.t,
+    required this.colors,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1250,13 +1423,20 @@ class _NeonButton extends StatelessWidget {
           transform: GradientRotation(t * 2 * math.pi),
         ),
         boxShadow: [
-          BoxShadow(color: glowColor.withAlpha(160), blurRadius: 16, spreadRadius: 2),
+          BoxShadow(
+            color: glowColor.withAlpha(160),
+            blurRadius: 16,
+            spreadRadius: 2,
+          ),
         ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(2.5),
         child: Container(
-          decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+          decoration: const BoxDecoration(
+            color: Colors.black,
+            shape: BoxShape.circle,
+          ),
           alignment: Alignment.center,
           child: Text(
             label,
@@ -1286,42 +1466,49 @@ class _CosmicPreviewState extends State<_CosmicPreview>
   late AnimationController _ctrl;
 
   static const _spaceBlue = Color(0xFF0D1B69);
-  static const _purple    = Color(0xFF9B5DE5);
+  static const _purple = Color(0xFF9B5DE5);
   static const _deepPurple = Color(0xFF5B10A0);
-  static const _gold      = Color(0xFFFFD700);
-  static const _orange    = Color(0xFFFF8C00);
+  static const _gold = Color(0xFFFFD700);
+  static const _orange = Color(0xFFFF8C00);
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))
-      ..repeat();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {
-        final t  = _ctrl.value;
+        final t = _ctrl.value;
         final pingPong = (math.sin(t * math.pi * 2) * 0.5 + 0.5);
         final c1 = Color.lerp(_spaceBlue, const Color(0xFF1A0A3F), pingPong)!;
         final c2 = Color.lerp(_purple, _deepPurple, pingPong)!;
         final c3 = Color.lerp(_gold, _orange, pingPong)!;
-        
+
         final borderColors = [
-            _purple, Colors.transparent, _gold, Colors.transparent, _purple
+          _purple,
+          Colors.transparent,
+          _gold,
+          Colors.transparent,
+          _purple,
         ];
-        
+
         return Stack(
           children: [
             Positioned.fill(
-              child: CustomPaint(
-                painter: _CosmicStarPainter(_ctrl.value),
-              ),
+              child: CustomPaint(painter: _CosmicStarPainter(_ctrl.value)),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1330,9 +1517,19 @@ class _CosmicPreviewState extends State<_CosmicPreview>
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _CosmicButton(label: '+', bgColors: [c1, c2], borderColors: borderColors, t: t),
+                    _CosmicButton(
+                      label: '+',
+                      bgColors: [c1, c2],
+                      borderColors: borderColors,
+                      t: t,
+                    ),
                     const Gap(10),
-                    _CosmicButton(label: '−', bgColors: [c2, c3], borderColors: borderColors, t: t),
+                    _CosmicButton(
+                      label: '−',
+                      bgColors: [c2, c3],
+                      borderColors: borderColors,
+                      t: t,
+                    ),
                   ],
                 ),
                 const Gap(10),
@@ -1362,8 +1559,8 @@ class _CosmicPreviewState extends State<_CosmicPreview>
                           Container(
                             height: 45,
                             decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(5),
-                                color: c2,
+                              borderRadius: BorderRadius.circular(5),
+                              color: c2,
                             ),
                           ),
                         ],
@@ -1387,7 +1584,10 @@ class _CosmicButton extends StatelessWidget {
   final double t;
 
   const _CosmicButton({
-    required this.label, required this.bgColors, required this.borderColors, required this.t
+    required this.label,
+    required this.bgColors,
+    required this.borderColors,
+    required this.t,
   });
 
   @override
@@ -1407,12 +1607,21 @@ class _CosmicButton extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(colors: bgColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+            gradient: LinearGradient(
+              colors: bgColors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
-            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, height: 1),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              height: 1,
+            ),
           ),
         ),
       ),
@@ -1425,13 +1634,21 @@ class _CosmicStarPainter extends CustomPainter {
   _CosmicStarPainter(this.t);
 
   static const _stars = [
-    Offset(0.10, 0.10), Offset(0.88, 0.18), Offset(0.55, 0.50),
-    Offset(0.20, 0.78), Offset(0.80, 0.70), Offset(0.40, 0.25),
+    Offset(0.10, 0.10),
+    Offset(0.88, 0.18),
+    Offset(0.55, 0.50),
+    Offset(0.20, 0.78),
+    Offset(0.80, 0.70),
+    Offset(0.40, 0.25),
     Offset(0.70, 0.88),
   ];
   static const _colors = [
-    Color(0xFFFFD700), Color(0xFFFFFFFF), Color(0xFF9B5DE5),
-    Color(0xFFFFFFFF), Color(0xFFFFD700), Color(0xFF9B5DE5),
+    Color(0xFFFFD700),
+    Color(0xFFFFFFFF),
+    Color(0xFF9B5DE5),
+    Color(0xFFFFFFFF),
+    Color(0xFFFFD700),
+    Color(0xFF9B5DE5),
     Color(0xFFFFFFFF),
   ];
 
@@ -1440,9 +1657,10 @@ class _CosmicStarPainter extends CustomPainter {
     final paint = Paint()..style = PaintingStyle.fill;
     for (int i = 0; i < _stars.length; i++) {
       final phase = (t + i / _stars.length) % 1.0;
-      final alpha = phase < 0.20
-          ? phase / 0.20
-          : phase < 0.35
+      final alpha =
+          phase < 0.20
+              ? phase / 0.20
+              : phase < 0.35
               ? 1.0 - (phase - 0.20) / 0.15
               : 0.0;
       if (alpha <= 0) continue;
@@ -1480,29 +1698,48 @@ class _LavaPreviewState extends State<_LavaPreview>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2800))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(milliseconds: 2800),
+    )..repeat();
     _heartbeat = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 12),   // first beat up
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.3), weight: 12),   // valley
-      TweenSequenceItem(tween: Tween(begin: 0.3, end: 0.75), weight: 12),  // second beat
-      TweenSequenceItem(tween: Tween(begin: 0.75, end: 0.0), weight: 14),  // back to rest
-      TweenSequenceItem(tween: ConstantTween(0.0), weight: 50),             // rest pause
+      TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: 1.0),
+        weight: 12,
+      ), // first beat up
+      TweenSequenceItem(
+        tween: Tween(begin: 1.0, end: 0.3),
+        weight: 12,
+      ), // valley
+      TweenSequenceItem(
+        tween: Tween(begin: 0.3, end: 0.75),
+        weight: 12,
+      ), // second beat
+      TweenSequenceItem(
+        tween: Tween(begin: 0.75, end: 0.0),
+        weight: 14,
+      ), // back to rest
+      TweenSequenceItem(tween: ConstantTween(0.0), weight: 50), // rest pause
     ]).animate(_ctrl);
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _heartbeat,
       builder: (_, __) {
-        final t      = _heartbeat.value;
-        final dark   = Color.lerp(const Color(0xFF3D0000), const Color(0xFF6B0000), t)!;
-        final mid    = Color.lerp(const Color(0xFFFF4500), const Color(0xFFFF6A00), t)!;
-        final bright = Color.lerp(const Color(0xFFFF8C00), const Color(0xFFFFD700), t)!;
+        final t = _heartbeat.value;
+        final dark =
+            Color.lerp(const Color(0xFF3D0000), const Color(0xFF6B0000), t)!;
+        final mid =
+            Color.lerp(const Color(0xFFFF4500), const Color(0xFFFF6A00), t)!;
+        final bright =
+            Color.lerp(const Color(0xFFFF8C00), const Color(0xFFFFD700), t)!;
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1511,13 +1748,17 @@ class _LavaPreviewState extends State<_LavaPreview>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _GradientCircle(
-                  label: '+', colors: [dark, mid],
-                  begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                  label: '+',
+                  colors: [dark, mid],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
                 ),
                 const Gap(10),
                 _GradientCircle(
-                  label: '−', colors: [mid, bright],
-                  begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                  label: '−',
+                  colors: [mid, bright],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
                 ),
               ],
             ),
@@ -1552,7 +1793,12 @@ class _PreviewCircle extends StatelessWidget {
   final Color bg;
   final Color fg;
   final bool border;
-  const _PreviewCircle({required this.label, required this.bg, required this.fg, this.border = false});
+  const _PreviewCircle({
+    required this.label,
+    required this.bg,
+    required this.fg,
+    this.border = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1560,14 +1806,19 @@ class _PreviewCircle extends StatelessWidget {
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: bg, 
+        color: bg,
         shape: BoxShape.circle,
         border: border ? Border.all(color: Colors.grey.withAlpha(50)) : null,
       ),
       alignment: Alignment.center,
       child: Text(
         label,
-        style: TextStyle(color: fg, fontSize: 22, fontWeight: FontWeight.bold, height: 1),
+        style: TextStyle(
+          color: fg,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          height: 1,
+        ),
       ),
     );
   }
@@ -1599,7 +1850,10 @@ class _SlimSliderPreview extends StatelessWidget {
             child: Container(
               width: 14,
               height: 14,
-              decoration: const BoxDecoration(color: _kBlue, shape: BoxShape.circle),
+              decoration: const BoxDecoration(
+                color: _kBlue,
+                shape: BoxShape.circle,
+              ),
             ),
           ),
         ],
@@ -1630,9 +1884,19 @@ class _FloatingButtonsSettingsCard extends StatelessWidget {
   final VoidCallback onChanged;
   const _FloatingButtonsSettingsCard({required this.onChanged});
 
+  // Styles that use rectangular buttons (corner radius slider is relevant)
+  static const _rectStyles = {
+    WidgetStyle.miui,
+    WidgetStyle.samsungOneUi,
+    WidgetStyle.cards,
+  };
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final currentStyle = WidgetSettings.style;
+    final cornerApplies = _rectStyles.contains(currentStyle);
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -1647,9 +1911,9 @@ class _FloatingButtonsSettingsCard extends StatelessWidget {
             Text(
               'Botones Flotantes',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: cs.primary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const Gap(16),
             _buildSliderRow(
@@ -1657,26 +1921,69 @@ class _FloatingButtonsSettingsCard extends StatelessWidget {
               icon: Icons.aspect_ratio_outlined,
               label: 'Tamaño',
               value: WidgetSettings.buttonSize.toDouble(),
-              min: 36, max: 72, divisions: 18,
-              onChanged: (v) { WidgetSettings.setButtonSize(v.toInt()); onChanged(); },
+              min: 36,
+              max: 72,
+              divisions: 18,
+              onChanged: (v) {
+                WidgetSettings.setButtonSize(v.toInt());
+                onChanged();
+              },
               formatStr: '${WidgetSettings.buttonSize}px',
             ),
-            _buildSliderRow(
-              context,
-              icon: Icons.rounded_corner_outlined,
-              label: 'Redondeo',
-              value: WidgetSettings.buttonCornerRadius,
-              min: 0.0, max: 0.5, divisions: 10,
-              onChanged: (v) { WidgetSettings.setButtonCornerRadius(v); onChanged(); },
-              formatStr: '${(WidgetSettings.buttonCornerRadius * 200).round()}%',
+            // Corner radius slider — only meaningful for rect-based styles
+            Opacity(
+              opacity: cornerApplies ? 1.0 : 0.4,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSliderRow(
+                    context,
+                    icon: Icons.rounded_corner_outlined,
+                    label: 'Redondeo (esquinas)',
+                    value: WidgetSettings.buttonCornerRadius,
+                    min: 0.0,
+                    max: 1.0,
+                    divisions: 10,
+                    onChanged:
+                        cornerApplies
+                            ? (v) {
+                              WidgetSettings.setButtonCornerRadius(v);
+                              onChanged();
+                            }
+                            : (_) {}, // no-op for circle-only styles
+                    formatStr:
+                        WidgetSettings.buttonCornerRadius < 0.15
+                            ? 'Cuadrado'
+                            : WidgetSettings.buttonCornerRadius > 0.85
+                            ? 'Redondo'
+                            : '${(WidgetSettings.buttonCornerRadius * 100).round()}%',
+                  ),
+                  if (!cornerApplies)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 28, bottom: 4),
+                      child: Text(
+                        'Solo aplica en estilos MIUI, One UI y Cards',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
             _buildSliderRow(
               context,
               icon: Icons.height_outlined,
               label: 'Separación',
               value: WidgetSettings.buttonGap.toDouble(),
-              min: 0, max: 40, divisions: 20,
-              onChanged: (v) { WidgetSettings.setButtonGap(v.toInt()); onChanged(); },
+              min: 0,
+              max: 40,
+              divisions: 20,
+              onChanged: (v) {
+                WidgetSettings.setButtonGap(v.toInt());
+                onChanged();
+              },
               formatStr: '${WidgetSettings.buttonGap}px',
             ),
             _buildSliderRow(
@@ -1684,8 +1991,13 @@ class _FloatingButtonsSettingsCard extends StatelessWidget {
               icon: Icons.opacity_outlined,
               label: 'Opacidad',
               value: WidgetSettings.opacity,
-              min: 0.0, max: 1.0, divisions: 20,
-              onChanged: (v) { WidgetSettings.setOpacity(v); onChanged(); },
+              min: 0.0,
+              max: 1.0,
+              divisions: 20,
+              onChanged: (v) {
+                WidgetSettings.setOpacity(v);
+                onChanged();
+              },
               formatStr: '${(WidgetSettings.opacity * 100).round()}%',
             ),
           ],
@@ -1716,9 +2028,9 @@ class _VolumeIndicatorSettingsCard extends StatelessWidget {
             Text(
               'Barra de Volumen',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: cs.primary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const Gap(16),
             _buildSliderRow(
@@ -1726,8 +2038,13 @@ class _VolumeIndicatorSettingsCard extends StatelessWidget {
               icon: Icons.timer_outlined,
               label: 'Duración',
               value: WidgetSettings.indicatorHideDelay.toDouble(),
-              min: 500, max: 4000, divisions: 14,
-              onChanged: (v) { WidgetSettings.setIndicatorHideDelay(v.toInt()); onChanged(); },
+              min: 500,
+              max: 4000,
+              divisions: 14,
+              onChanged: (v) {
+                WidgetSettings.setIndicatorHideDelay(v.toInt());
+                onChanged();
+              },
               formatStr: '${WidgetSettings.indicatorHideDelay / 1000}s',
             ),
             _buildSliderRow(
@@ -1735,8 +2052,13 @@ class _VolumeIndicatorSettingsCard extends StatelessWidget {
               icon: Icons.straighten_outlined,
               label: 'Ancho',
               value: WidgetSettings.indicatorWidth.toDouble(),
-              min: 24, max: 100, divisions: 38,
-              onChanged: (v) { WidgetSettings.setIndicatorWidth(v.toInt()); onChanged(); },
+              min: 24,
+              max: 100,
+              divisions: 38,
+              onChanged: (v) {
+                WidgetSettings.setIndicatorWidth(v.toInt());
+                onChanged();
+              },
               formatStr: '${WidgetSettings.indicatorWidth}px',
             ),
             _buildSliderRow(
@@ -1744,8 +2066,13 @@ class _VolumeIndicatorSettingsCard extends StatelessWidget {
               icon: Icons.height_rounded,
               label: 'Alto',
               value: WidgetSettings.indicatorHeight.toDouble(),
-              min: 100, max: 300, divisions: 40,
-              onChanged: (v) { WidgetSettings.setIndicatorHeight(v.toInt()); onChanged(); },
+              min: 100,
+              max: 300,
+              divisions: 40,
+              onChanged: (v) {
+                WidgetSettings.setIndicatorHeight(v.toInt());
+                onChanged();
+              },
               formatStr: '${WidgetSettings.indicatorHeight}px',
             ),
             _buildSliderRow(
@@ -1753,8 +2080,13 @@ class _VolumeIndicatorSettingsCard extends StatelessWidget {
               icon: Icons.space_bar_rounded,
               label: 'Distancia',
               value: WidgetSettings.indicatorGap.toDouble(),
-              min: 0, max: 50, divisions: 5,
-              onChanged: (v) { WidgetSettings.setIndicatorGap(v.toInt()); onChanged(); },
+              min: 0,
+              max: 50,
+              divisions: 5,
+              onChanged: (v) {
+                WidgetSettings.setIndicatorGap(v.toInt());
+                onChanged();
+              },
               formatStr: '${WidgetSettings.indicatorGap}px',
             ),
           ],
@@ -1789,9 +2121,9 @@ class _CreativeSettingsCard extends StatelessWidget {
                 Text(
                   'Diseños Creativos',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.purple,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Colors.purple,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -1806,8 +2138,13 @@ class _CreativeSettingsCard extends StatelessWidget {
               icon: Icons.speed_outlined,
               label: 'Velocidad de Animación',
               value: WidgetSettings.creativeAnimSpeed,
-              min: 0.5, max: 2.0, divisions: 6,
-              onChanged: (v) { WidgetSettings.setCreativeAnimSpeed(v); onChanged(); },
+              min: 0.5,
+              max: 2.0,
+              divisions: 6,
+              onChanged: (v) {
+                WidgetSettings.setCreativeAnimSpeed(v);
+                onChanged();
+              },
               formatStr: '${WidgetSettings.creativeAnimSpeed}x',
             ),
             _buildSliderRow(
@@ -1815,9 +2152,15 @@ class _CreativeSettingsCard extends StatelessWidget {
               icon: Icons.blur_on_outlined,
               label: 'Densidad del destello',
               value: WidgetSettings.creativeGlowIntensity,
-              min: 0.2, max: 3.0, divisions: 14,
-              onChanged: (v) { WidgetSettings.setCreativeGlowIntensity(v); onChanged(); },
-              formatStr: '${(WidgetSettings.creativeGlowIntensity * 100).toInt()}%',
+              min: 0.2,
+              max: 3.0,
+              divisions: 14,
+              onChanged: (v) {
+                WidgetSettings.setCreativeGlowIntensity(v);
+                onChanged();
+              },
+              formatStr:
+                  '${(WidgetSettings.creativeGlowIntensity * 100).toInt()}%',
             ),
           ],
         ),
@@ -1948,30 +2291,30 @@ class _OemCompatBannerState extends State<_OemCompatBanner> {
   }
 
   String get _title => switch (_oemType) {
-        _OemType.miui   => '⚡ Paso extra requerido en MIUI',
-        _OemType.colorOs => '⚡ Paso extra requerido en ColorOS',
-        _OemType.oneUi  => '⚡ Paso extra requerido en One UI',
-        _OemType.other  => '',
-      };
+    _OemType.miui => '⚡ Paso extra requerido en MIUI',
+    _OemType.colorOs => '⚡ Paso extra requerido en ColorOS',
+    _OemType.oneUi => '⚡ Paso extra requerido en One UI',
+    _OemType.other => '',
+  };
 
   String get _instructions => switch (_oemType) {
-        _OemType.miui =>
-          'Para que los botones flotantes no desaparezcan:\n\n'
+    _OemType.miui =>
+      'Para que los botones flotantes no desaparezcan:\n\n'
           '1. Ve a Ajustes → Aplicaciones → Floating Volume\n'
           '2. Toca "Inicio automático" y actívalo ✅\n'
           '3. También ve a Batería → Ahorro de batería → Sin restricciones',
-        _OemType.colorOs =>
-          'Para evitar que el sistema detenga los botones flotantes:\n\n'
+    _OemType.colorOs =>
+      'Para evitar que el sistema detenga los botones flotantes:\n\n'
           '1. Ve a Ajustes → Aplicaciones → Floating Volume\n'
           '2. Toca "Inicio automático" y actívalo ✅\n'
           '3. También en Batería → selecciona "Sin restricciones"',
-        _OemType.oneUi =>
-          'Para mantener los botones activos en segundo plano:\n\n'
+    _OemType.oneUi =>
+      'Para mantener los botones activos en segundo plano:\n\n'
           '1. Ve a Ajustes → Aplicaciones → Floating Volume\n'
           '2. En Batería → selecciona "Sin restricciones"\n'
           '3. También desactiva "Batería Adaptable" si tienes problemas',
-        _OemType.other => '',
-      };
+    _OemType.other => '',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -1992,8 +2335,10 @@ class _OemCompatBannerState extends State<_OemCompatBanner> {
           children: [
             ListTile(
               contentPadding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
-              leading: const Icon(Icons.warning_amber_rounded,
-                  color: Color(0xFFE65100)),
+              leading: const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFE65100),
+              ),
               title: Text(
                 _title,
                 style: const TextStyle(
@@ -2003,8 +2348,11 @@ class _OemCompatBannerState extends State<_OemCompatBanner> {
                 ),
               ),
               trailing: IconButton(
-                icon: const Icon(Icons.close_rounded,
-                    size: 18, color: Color(0xFFBF360C)),
+                icon: const Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: Color(0xFFBF360C),
+                ),
                 onPressed: _dismiss,
                 tooltip: 'No mostrar de nuevo',
               ),

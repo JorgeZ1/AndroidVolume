@@ -22,8 +22,10 @@ class Bloc extends a.Bloc<e.Event, s.State> {
     final prefs = await SharedPreferences.getInstance();
     final themeName = prefs.getString("theme");
 
+    // Default to dark mode on first install.
+    // If the user has explicitly chosen a theme, that preference is respected.
     return s.Theme.values.where((t) => t.name == themeName).firstOrNull ??
-        s.Theme.system;
+        s.Theme.dark;
   }
 
   static Future<void> _set(s.Theme newTheme) async {
