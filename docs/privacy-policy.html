@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Política de Privacidad — Floating Volume</title>
+  <style>
+    :root {
+      --primary: #2979FF;
+      --bg: #f8f9fa;
+      --card: #ffffff;
+      --text: #1a1a2e;
+      --muted: #6c757d;
+      --border: #e0e0e0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 48px 24px 40px;
+      text-align: center;
+    }
+    header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+    header p  { font-size: 1rem; opacity: .85; }
+    .badge {
+      display: inline-block;
+      margin-top: 16px;
+      background: rgba(255,255,255,.18);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: .85rem;
+    }
+    main {
+      max-width: 780px;
+      margin: 40px auto;
+      padding: 0 20px 60px;
+    }
+    section {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 28px 28px 20px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+    h2 {
+      font-size: 1.05rem;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h2 .icon { font-size: 1.1rem; }
+    p  { font-size: .95rem; color: #333; margin-bottom: 10px; }
+    ul { padding-left: 20px; margin-bottom: 10px; }
+    li { font-size: .95rem; color: #333; margin-bottom: 4px; }
+    a  { color: var(--primary); }
+    hr { border: none; border-top: 1px solid var(--border); margin: 16px 0 4px; }
+    footer {
+      text-align: center;
+      font-size: .82rem;
+      color: var(--muted);
+      padding-bottom: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Floating Volume</h1>
+  <p>Política de Privacidad</p>
+  <span class="badge">Última actualización: 17 de abril de 2026</span>
+</header>
+
+<main>
+
+  <section>
+    <h2><span class="icon">ℹ️</span> 1. Información general</h2>
+    <p>
+      Floating Volume es una aplicación gratuita para Android que muestra botones flotantes
+      de control de volumen (+ y −) sobre otras aplicaciones. Esta política describe cómo
+      manejamos la información del usuario y qué datos terceros pueden recopilar.
+    </p>
+    <hr>
+  </section>
+
+  <section>
+    <h2><span class="icon">🔒</span> 2. Datos que NO recopila la aplicación</h2>
+    <p>Floating Volume <strong>no recopila ni transmite</strong> a ningún servidor propio:</p>
+    <ul>
+      <li>Nombres, correos electrónicos ni datos de contacto</li>
+      <li>Contraseñas ni datos de cuenta</li>
+      <li>Grabaciones de audio, cámara ni micrófono</li>
+      <li>Historial de llamadas ni mensajes</li>
+      <li>Ubicación precisa o aproximada</li>
+    </ul>
+    <p>
+      Todas las preferencias del usuario (estilo visual, opacidad, posición de los botones,
+      configuración avanzada) se almacenan <strong>exclusivamente en el dispositivo</strong>
+      mediante SharedPreferences y no son enviadas a ningún servidor.
+    </p>
+    <hr>
+  </section>
+
+  <section>
+    <h2><span class="icon">⚙️</span> 3. Permisos del sistema utilizados</h2>
+    <ul>
+      <li><strong>SYSTEM_ALERT_WINDOW:</strong> Necesario para mostrar los botones flotantes sobre otras aplicaciones. Sin este permiso la app no puede funcionar.</li>
+      <li><strong>REQUEST_IGNORE_BATTERY_OPTIMIZATIONS:</strong> Mantiene el servicio activo en segundo plano, especialmente en dispositivos con gestión agresiva de batería.</li>
+      <li><strong>FOREGROUND_SERVICE / FOREGROUND_SERVICE_MEDIA_PLAYBACK:</strong> Ejecuta el servicio de botones flotantes de forma estable con una notificación persistente.</li>
+      <li><strong>MODIFY_AUDIO_SETTINGS:</strong> Permite leer y modificar el volumen del sistema.</li>
+      <li><strong>POST_NOTIFICATIONS:</strong> Muestra la notificación de control (requerido en Android 13+).</li>
+      <li><strong>RECEIVE_BOOT_COMPLETED:</strong> Reinicia el servicio automáticamente tras un reinicio del dispositivo.</li>
+      <li><strong>INTERNET:</strong> Requerido por Google AdMob para cargar anuncios.</li>
+    </ul>
+    <hr>
+  </section>
+
+  <section>
+    <h2><span class="icon">📢</span> 4. Publicidad — Google AdMob</h2>
+    <p>
+      Floating Volume utiliza Google AdMob para mostrar anuncios de video recompensados
+      en la sección de Estilos Especiales. Google AdMob puede recopilar:
+    </p>
+    <ul>
+      <li>Identificador de publicidad de Android (AAID/GAID)</li>
+      <li>Dirección IP (para geolocalización aproximada)</li>
+      <li>Información del dispositivo (modelo, versión de Android)</li>
+      <li>Datos de interacción con anuncios</li>
+    </ul>
+    <p>
+      Puedes inhabilitar los anuncios personalizados en:<br>
+      <em>Ajustes → Google → Anuncios → "Inhabilitar personalización de anuncios"</em>
+    </p>
+    <p>
+      <a href="https://policies.google.com/privacy" target="_blank">Política de Privacidad de Google</a> ·
+      <a href="https://support.google.com/ads/answer/2662922" target="_blank">Inhabilitar anuncios personalizados</a>
+    </p>
+    <hr>
+  </section>
+
+  <section>
+    <h2><span class="icon">⚖️</span> 5. Consentimiento — RGPD / CCPA / LGPD</h2>
+    <p>
+      Si resides en el Área Económica Europea (AEE), Reino Unido, California (EE.UU.) o Brasil,
+      al abrir la aplicación por primera vez se mostrará un formulario de consentimiento de Google
+      (User Messaging Platform — UMP) para el uso de datos con fines publicitarios.
+    </p>
+    <p>Puedes aceptar o rechazar el uso de datos para publicidad personalizada en cualquier momento.
+       Si rechazas, podrás seguir usando la aplicación con anuncios no personalizados.</p>
+    <hr>
+  </section>
+
+  <section>
+    <h2><span class="icon">👶</span> 6. Protección de menores</h2>
+    <p>
+      Floating Volume no está dirigida a menores de 13 años (ni de 16 años en el AEE).
+      No recopilamos conscientemente información de menores de edad.
+    </p>
+    <hr>
+  </section>
+
+  <section>
+    <h2><span class="icon">🗄️</span> 7. Retención de datos</h2>
+    <p>
+      Los datos de preferencias se almacenan localmente en el dispositivo y se eliminan
+      automáticamente al desinstalar la aplicación. No existe backend propio.
+    </p>
+    <hr>
+  </section>
+
+  <section>
+    <h2><span class="icon">🔄</span> 8. Cambios a esta política</h2>
+    <p>
+      Podemos actualizar esta política periódicamente. La fecha de última actualización
+      siempre se indicará al inicio de este documento.
+    </p>
+    <hr>
+  </section>
+
+  <section>
+    <h2><span class="icon">📬</span> 9. Contacto</h2>
+    <p>
+      Para preguntas o solicitudes relacionadas con esta política, abre un issue en el
+      repositorio oficial:<br>
+      <a href="https://github.com/fixbyte/FloatingVolume/issues" target="_blank">
+        github.com/fixbyte/FloatingVolume/issues
+      </a>
+    </p>
+    <hr>
+  </section>
+
+</main>
+
+<footer>
+  <p>© 2026 Fixbyte · Floating Volume · Todos los derechos reservados</p>
+</footer>
+
+</body>
+</html>
