@@ -5,15 +5,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Manages AdMob rewarded ads and the 3-day unlock state for special styles.
 ///
-/// ⚠️  Before publishing, replace the test IDs:
-///   • AdMob App ID   → android/app/src/main/AndroidManifest.xml
-///   • _rewardedAdId  → replace the string below
+/// To re-enable ads:
+///   1. Set [_adsEnabled] to true.
+///   2. Replace [_rewardedAdId] with your real Ad Unit ID from AdMob console.
+///   3. Replace the App ID in android/app/src/main/AndroidManifest.xml.
+///   4. Call AdService.initialize() again in main.dart.
 class AdService {
   AdService._();
 
+  /// Set to true once real AdMob IDs are configured.
+  static const bool _adsEnabled = false;
+
   // TODO: Replace with your real rewarded ad unit ID from AdMob console
   static const String _rewardedAdId =
-      'ca-app-pub-3940256099942544/5224354917'; // Google test ID
+      'ca-app-pub-3940256099942544/5224354917'; // Google test ID — replace before enabling
 
   static const String _prefKey = 'special_unlock_expiry';
   static const Duration _unlockDuration = Duration(days: 3);
@@ -25,6 +30,7 @@ class AdService {
 
   /// Call once at app start. Requests GDPR/CCPA consent then inits AdMob.
   static Future<void> initialize() async {
+    if (!_adsEnabled) return;
     await _initConsent();
     await MobileAds.instance.initialize();
     _preload(); // fire-and-forget preload
@@ -61,6 +67,7 @@ class AdService {
   /// Shows the rewarded ad. Calls [onRewarded] after the user earns the reward.
   /// Returns false if no ad could be loaded/shown.
   static Future<bool> showAd({required VoidCallback onRewarded}) async {
+    if (!_adsEnabled) return false;
     if (_ad == null) {
       await _preload();
       // Give the load a moment
@@ -95,7 +102,7 @@ class AdService {
   // ── Private ───────────────────────────────────────────────────────────────
 
   static Future<void> _preload() async {
-    if (_ad != null || _loading) return;
+    if (!_adsEnabled || _ad != null || _loading) return;
     _loading = true;
     try {
       await RewardedAd.load(
