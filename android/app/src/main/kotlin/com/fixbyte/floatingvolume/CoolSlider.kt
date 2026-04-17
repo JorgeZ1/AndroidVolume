@@ -1,4 +1,4 @@
-package com.github.mkalmousli.floating_volume
+package com.fixbyte.floatingvolume
 
 import android.content.Context
 import android.graphics.drawable.GradientDrawable

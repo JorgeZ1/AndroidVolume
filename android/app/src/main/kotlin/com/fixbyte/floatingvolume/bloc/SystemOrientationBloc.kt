@@ -1,9 +1,9 @@
-package com.github.mkalmousli.floating_volume.bloc
+package com.fixbyte.floatingvolume.bloc
 
 import android.content.Context
 import android.content.res.Configuration
 import android.view.OrientationEventListener
-import com.github.mkalmousli.floating_volume.models.Orientation
+import com.fixbyte.floatingvolume.models.Orientation
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

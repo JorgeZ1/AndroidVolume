@@ -62,3 +62,7 @@ web/
 
 .CACHE
 app.apk
+# Signing credentials — never commit these
+android/key.properties
+android/*.jks
+android/*.keystore

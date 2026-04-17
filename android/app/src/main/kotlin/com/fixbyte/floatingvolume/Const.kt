@@ -1,4 +1,4 @@
-package com.github.mkalmousli.floating_volume
+package com.fixbyte.floatingvolume
 
 object Const {
     const val SHARED_PREFS_NAME = "prefs"

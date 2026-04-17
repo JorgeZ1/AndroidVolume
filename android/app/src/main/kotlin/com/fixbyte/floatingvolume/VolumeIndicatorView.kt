@@ -1,4 +1,4 @@
-package com.github.mkalmousli.floating_volume
+package com.fixbyte.floatingvolume
 
 import android.animation.Keyframe
 import android.animation.PropertyValuesHolder
@@ -60,7 +60,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
     private var currentFraction = 0f
     private var fillAnimator: ValueAnimator? = null
     private var sparkleAnimator: ValueAnimator? = null
-    private var animatedBorder: com.github.mkalmousli.floating_volume.style.RotatingBorderDrawable? = null
+    private var animatedBorder: com.fixbyte.floatingvolume.style.RotatingBorderDrawable? = null
 
     override fun dispatchDraw(canvas: android.graphics.Canvas) {
         super.dispatchDraw(canvas)
@@ -234,7 +234,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         val glowRaw = WidgetSettings.creativeGlowIntensity
         val glowWidth = dp(2).toFloat() * glowRaw * 1.5f
 
-        animatedBorder = com.github.mkalmousli.floating_volume.style.RotatingBorderDrawable(
+        animatedBorder = com.fixbyte.floatingvolume.style.RotatingBorderDrawable(
             glowWidth, dp(18).toFloat(), intArrayOf(cyan, magenta, cyan)
         )
 
@@ -272,7 +272,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         val animSpeed = WidgetSettings.creativeAnimSpeed.takeIf { it > 0 } ?: 1f
         val glowWidth = dp(2).toFloat() * WidgetSettings.creativeGlowIntensity * 1.5f
 
-        animatedBorder = com.github.mkalmousli.floating_volume.style.RotatingBorderDrawable(
+        animatedBorder = com.fixbyte.floatingvolume.style.RotatingBorderDrawable(
             glowWidth, dp(18).toFloat(), intArrayOf(
                 Color.parseColor("#9B5DE5"), Color.TRANSPARENT, Color.parseColor("#FFD700"), Color.TRANSPARENT, Color.parseColor("#9B5DE5")
             )

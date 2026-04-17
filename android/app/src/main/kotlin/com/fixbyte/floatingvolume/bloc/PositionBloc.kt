@@ -1,10 +1,10 @@
-package com.github.mkalmousli.floating_volume.bloc
+package com.fixbyte.floatingvolume.bloc
 
 import android.content.Context
 import android.util.Log
-import com.github.mkalmousli.floating_volume.models.Orientation
-import com.github.mkalmousli.floating_volume.newInMain
-import com.github.mkalmousli.floating_volume.sharedPrefs
+import com.fixbyte.floatingvolume.models.Orientation
+import com.fixbyte.floatingvolume.newInMain
+import com.fixbyte.floatingvolume.sharedPrefs
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

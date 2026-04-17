@@ -1,13 +1,13 @@
-package com.github.mkalmousli.floating_volume.pigeon_impl
+package com.fixbyte.floatingvolume.pigeon_impl
 
 import NativeApi
 import ToastDuration
 import android.content.Context
 import android.widget.Toast
-import com.github.mkalmousli.floating_volume.bloc.ServiceStatusBloc
-import com.github.mkalmousli.floating_volume.bloc.VisibilityBloc
-import com.github.mkalmousli.floating_volume.inIO
-import com.github.mkalmousli.floating_volume.inMain
+import com.fixbyte.floatingvolume.bloc.ServiceStatusBloc
+import com.fixbyte.floatingvolume.bloc.VisibilityBloc
+import com.fixbyte.floatingvolume.inIO
+import com.fixbyte.floatingvolume.inMain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first

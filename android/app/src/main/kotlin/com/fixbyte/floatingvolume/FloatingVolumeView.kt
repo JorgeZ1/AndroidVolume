@@ -1,4 +1,4 @@
-package com.github.mkalmousli.floating_volume
+package com.fixbyte.floatingvolume
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
@@ -11,8 +11,8 @@ import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.github.mkalmousli.floating_volume.style.ButtonStyleApplier
-import com.github.mkalmousli.floating_volume.style.StyleFactory
+import com.fixbyte.floatingvolume.style.ButtonStyleApplier
+import com.fixbyte.floatingvolume.style.StyleFactory
 
 class FloatingVolumeView(context: Context) : LinearLayout(context) {
 

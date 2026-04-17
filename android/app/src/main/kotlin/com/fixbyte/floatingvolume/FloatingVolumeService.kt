@@ -1,4 +1,4 @@
-package com.github.mkalmousli.floating_volume
+package com.fixbyte.floatingvolume
 
 import android.Manifest
 import android.animation.ValueAnimator
@@ -22,10 +22,10 @@ import androidx.core.animation.doOnEnd
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.github.mkalmousli.floating_volume.bloc.PositionBloc
-import com.github.mkalmousli.floating_volume.bloc.ServiceStatusBloc
-import com.github.mkalmousli.floating_volume.bloc.SystemVolumeBloc
-import com.github.mkalmousli.floating_volume.bloc.VisibilityBloc
+import com.fixbyte.floatingvolume.bloc.PositionBloc
+import com.fixbyte.floatingvolume.bloc.ServiceStatusBloc
+import com.fixbyte.floatingvolume.bloc.SystemVolumeBloc
+import com.fixbyte.floatingvolume.bloc.VisibilityBloc
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

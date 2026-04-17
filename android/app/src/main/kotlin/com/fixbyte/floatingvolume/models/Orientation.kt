@@ -1,4 +1,4 @@
-package com.github.mkalmousli.floating_volume.models
+package com.fixbyte.floatingvolume.models
 
 enum class Orientation {
     Portrait,

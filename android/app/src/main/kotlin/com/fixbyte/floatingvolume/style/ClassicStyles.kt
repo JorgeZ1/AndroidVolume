@@ -1,10 +1,10 @@
-package com.github.mkalmousli.floating_volume.style
+package com.fixbyte.floatingvolume.style
 
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.view.View
 import android.widget.TextView
-import com.github.mkalmousli.floating_volume.WidgetSettings
+import com.fixbyte.floatingvolume.WidgetSettings
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

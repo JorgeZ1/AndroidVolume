@@ -1,4 +1,4 @@
-package com.github.mkalmousli.floating_volume
+package com.fixbyte.floatingvolume
 
 import NativeApi
 import android.app.NotificationChannel
@@ -7,15 +7,15 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
-import com.github.mkalmousli.floating_volume.bloc.PositionBloc
-import com.github.mkalmousli.floating_volume.bloc.ServiceStatusBloc
-import com.github.mkalmousli.floating_volume.bloc.SystemOrientationBloc
-import com.github.mkalmousli.floating_volume.bloc.SystemVolumeBloc
-import com.github.mkalmousli.floating_volume.bloc.SystemVolumeInPercentageBloc
-import com.github.mkalmousli.floating_volume.bloc.VisibilityBloc
-import com.github.mkalmousli.floating_volume.pigeon_impl.FloatingVolumeVisibilityStreamHandlerImpl
-import com.github.mkalmousli.floating_volume.pigeon_impl.NativeApiImpl
-import com.github.mkalmousli.floating_volume.pigeon_impl.ServiceStatusStreamHandlerImpl
+import com.fixbyte.floatingvolume.bloc.PositionBloc
+import com.fixbyte.floatingvolume.bloc.ServiceStatusBloc
+import com.fixbyte.floatingvolume.bloc.SystemOrientationBloc
+import com.fixbyte.floatingvolume.bloc.SystemVolumeBloc
+import com.fixbyte.floatingvolume.bloc.SystemVolumeInPercentageBloc
+import com.fixbyte.floatingvolume.bloc.VisibilityBloc
+import com.fixbyte.floatingvolume.pigeon_impl.FloatingVolumeVisibilityStreamHandlerImpl
+import com.fixbyte.floatingvolume.pigeon_impl.NativeApiImpl
+import com.fixbyte.floatingvolume.pigeon_impl.ServiceStatusStreamHandlerImpl
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
