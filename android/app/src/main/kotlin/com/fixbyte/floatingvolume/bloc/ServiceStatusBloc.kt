@@ -1,12 +1,12 @@
-package com.github.mkalmousli.floating_volume.bloc
+package com.fixbyte.floatingvolume.bloc
 
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import com.github.mkalmousli.floating_volume.Const
-import com.github.mkalmousli.floating_volume.FloatingVolumeService
-import com.github.mkalmousli.floating_volume.inMain
-import com.github.mkalmousli.floating_volume.sharedPrefs
+import com.fixbyte.floatingvolume.Const
+import com.fixbyte.floatingvolume.FloatingVolumeService
+import com.fixbyte.floatingvolume.inMain
+import com.fixbyte.floatingvolume.sharedPrefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow

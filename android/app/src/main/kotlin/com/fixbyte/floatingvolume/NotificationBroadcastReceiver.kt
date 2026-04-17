@@ -1,10 +1,10 @@
-package com.github.mkalmousli.floating_volume
+package com.fixbyte.floatingvolume
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.github.mkalmousli.floating_volume.bloc.ServiceStatusBloc
-import com.github.mkalmousli.floating_volume.bloc.VisibilityBloc
+import com.fixbyte.floatingvolume.bloc.ServiceStatusBloc
+import com.fixbyte.floatingvolume.bloc.VisibilityBloc
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

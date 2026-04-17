@@ -1,4 +1,4 @@
-package com.github.mkalmousli.floating_volume.style
+package com.fixbyte.floatingvolume.style
 
 import android.view.View
 import android.widget.TextView

@@ -1,11 +1,11 @@
-package com.github.mkalmousli.floating_volume
+package com.fixbyte.floatingvolume
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
-import com.github.mkalmousli.floating_volume.bloc.ServiceStatusBloc
+import com.fixbyte.floatingvolume.bloc.ServiceStatusBloc
 
 /**
  * Receives BOOT_COMPLETED and MY_PACKAGE_REPLACED broadcasts.

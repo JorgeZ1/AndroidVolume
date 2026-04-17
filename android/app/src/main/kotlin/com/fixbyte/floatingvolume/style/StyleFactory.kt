@@ -1,6 +1,6 @@
-package com.github.mkalmousli.floating_volume.style
+package com.fixbyte.floatingvolume.style
 
-import com.github.mkalmousli.floating_volume.WidgetSettings
+import com.fixbyte.floatingvolume.WidgetSettings
 
 /** Creates the correct [ButtonStyleApplier] for the current widget settings. */
 object StyleFactory {

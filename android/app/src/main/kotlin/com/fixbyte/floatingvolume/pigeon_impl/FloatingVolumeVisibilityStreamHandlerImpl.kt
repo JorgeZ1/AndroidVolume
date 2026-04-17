@@ -1,25 +1,26 @@
-package com.github.mkalmousli.floating_volume.pigeon_impl
+package com.fixbyte.floatingvolume.pigeon_impl
 
+import FloatingVolumeVisibilityStreamHandler
 import PigeonEventSink
-import ServiceStatusStreamHandler
-import com.github.mkalmousli.floating_volume.bloc.ServiceStatusBloc
-import com.github.mkalmousli.floating_volume.inIO
-import com.github.mkalmousli.floating_volume.inMain
+import com.fixbyte.floatingvolume.bloc.ServiceStatusBloc
+import com.fixbyte.floatingvolume.bloc.VisibilityBloc
+import com.fixbyte.floatingvolume.inIO
+import com.fixbyte.floatingvolume.inMain
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 
-class ServiceStatusStreamHandlerImpl(
+class FloatingVolumeVisibilityStreamHandlerImpl(
     private val scope: CoroutineScope
-) : ServiceStatusStreamHandler() {
+) : FloatingVolumeVisibilityStreamHandler() {
     private var job: Job? = null
 
     override fun onListen(p0: Any?, sink: PigeonEventSink<Boolean>) {
         job = scope.inIO {
-            ServiceStatusBloc.state
+            VisibilityBloc.state
                 .collectLatest {
                     val visible = when (it) {
-                        ServiceStatusBloc.State.On -> true
+                        VisibilityBloc.State.Shown -> true
                         else -> false
                     }
 

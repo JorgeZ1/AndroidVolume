@@ -1,4 +1,4 @@
-package com.github.mkalmousli.floating_volume.bloc
+package com.fixbyte.floatingvolume.bloc
 
 import android.content.BroadcastReceiver
 import android.content.Context
