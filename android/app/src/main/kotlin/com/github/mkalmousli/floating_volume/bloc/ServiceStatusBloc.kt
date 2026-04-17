@@ -14,9 +14,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 object ServiceStatusBloc {
-    private val _state = MutableStateFlow<State>(
-        State.Off
-    )
+    private val _state = MutableStateFlow<State>(State.Off)
+
+    fun initializeState(context: Context) {
+        val wasOn = wasEnabledBeforeReboot(context)
+        _state.value = if (wasOn) State.On else State.Off
+    }
 
     val state = _state.asStateFlow()
 

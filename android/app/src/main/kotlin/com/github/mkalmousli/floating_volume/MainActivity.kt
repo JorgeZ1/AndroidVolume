@@ -115,6 +115,7 @@ class MainActivity : FlutterActivity() {
              * [ServiceStatusBloc]
              */
             inIO {
+                ServiceStatusBloc.initializeState(c)
                 ServiceStatusBloc.registerEvents(c)
             }
 
