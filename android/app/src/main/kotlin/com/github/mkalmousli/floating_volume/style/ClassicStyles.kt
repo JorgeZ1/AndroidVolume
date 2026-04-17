@@ -16,6 +16,14 @@ private fun roundRectDrawable(color: Int, cornerDp: Float, borderColor: Int = Co
         if (borderWidthPx > 0) setStroke(borderWidthPx, borderColor)
     }
 
+/** Always produces a perfect circle regardless of buttonCornerRadius setting. */
+private fun circleDrawable(color: Int, borderColor: Int = Color.TRANSPARENT, borderWidthPx: Int = 0) =
+    GradientDrawable().apply {
+        shape = GradientDrawable.OVAL
+        setColor(color)
+        if (borderWidthPx > 0) setStroke(borderWidthPx, borderColor)
+    }
+
 private val dynamicCornerDp: Float
     get() = WidgetSettings.buttonSize * WidgetSettings.buttonCornerRadius
 
@@ -54,8 +62,9 @@ class AndroidStyleApplier(
                 else         Color.WHITE to Color.parseColor("#2979FF")
         }
         val elev = dp(if (isNight || colorMode == WidgetSettings.ColorMode.DARK) 3 else 5)
+        // Always use OVAL — Android style buttons must be perfect circles
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { roundRectDrawable(circleBg, dynamicCornerDp) }, iconColor, elev)
+            { circleDrawable(circleBg) }, iconColor, elev)
     }
 }
 
@@ -68,8 +77,9 @@ class Android12StyleApplier : ButtonStyleApplier {
         plusLabel: TextView, minusLabel: TextView,
         dp: (Number) -> Int,
     ) {
+        // Always use OVAL — Android 12 style buttons must be perfect circles
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { roundRectDrawable(Color.parseColor("#2979FF"), dynamicCornerDp) }, Color.WHITE, dp(3))
+            { circleDrawable(Color.parseColor("#2979FF")) }, Color.WHITE, dp(3))
     }
 }
 
@@ -83,10 +93,11 @@ class IosStyleApplier : ButtonStyleApplier {
         dp: (Number) -> Int,
     ) {
         // Translucent frosted-glass look: white with low alpha + white border
+        // Always use OVAL — iOS style buttons must be perfect circles
         val glassBg = Color.argb(50, 255, 255, 255)
         val border  = Color.argb(80, 255, 255, 255)
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { roundRectDrawable(glassBg, dynamicCornerDp).also { it.setStroke(dp(1), border) } },
+            { circleDrawable(glassBg, border, dp(1)) },
             Color.WHITE, dp(4))
     }
 }

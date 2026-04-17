@@ -152,6 +152,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         val fill  = Color.parseColor("#2979FF")
         val text  = if (isDark) Color.WHITE else Color.parseColor("#2979FF")
         apply(card, track, fill, text)
+        iconLabel.setTextColor(Color.argb(180, 41, 121, 255)) // blue tinted
     }
 
     private fun applyAndroid12() {
@@ -163,6 +164,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         )
         fillBg.cornerRadius  = dp(4).toFloat()
         trackBg.cornerRadius = dp(4).toFloat()
+        iconLabel.setTextColor(Color.argb(200, 255, 255, 255))
     }
 
     private fun applyIos() {
@@ -335,6 +337,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         cardBg.cornerRadius  = dp(12).toFloat()
         trackBg.cornerRadius = dp(4).toFloat()
         fillBg.cornerRadius  = dp(4).toFloat()
+        iconLabel.visibility = android.view.View.GONE  // Cards style has no VOL label
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -345,7 +348,8 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         trackBg.setColor(track)
         fillBg.setColor(fill)
         numberLabel.setTextColor(text)
-        iconLabel.visibility = android.view.View.GONE
+        // Show VOL label by default; individual styles can hide/color it as needed
+        iconLabel.visibility = android.view.View.VISIBLE
     }
 
     private fun updateFill() {

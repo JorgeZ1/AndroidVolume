@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -568,7 +569,13 @@ class _MainViewState extends State<_MainView> {
             ),
           ),
 
+          const Gap(16),
+
+          // ── OEM compatibility banner ──────────────────────────────────────
+          const _OemCompatBanner(),
+
           const Gap(32),
+
         ],
       ),
     );
@@ -1868,3 +1875,154 @@ Widget _buildSliderRow(
   );
 }
 
+// ---------------------------------------------------------------------------
+// OEM Compatibility Banner
+// Shown once on devices with aggressive memory management (MIUI, ColorOS, One UI)
+// Guides users to enable the "Auto-Start" permission in system settings.
+// ---------------------------------------------------------------------------
+
+enum _OemType { miui, colorOs, oneUi, other }
+
+class _OemCompatBanner extends StatefulWidget {
+  const _OemCompatBanner();
+
+  @override
+  State<_OemCompatBanner> createState() => _OemCompatBannerState();
+}
+
+class _OemCompatBannerState extends State<_OemCompatBanner> {
+  static const _prefKey = 'oem_banner_dismissed';
+
+  bool _dismissed = true; // start hidden until we know
+  _OemType _oemType = _OemType.other;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final prefs = await SharedPreferences.getInstance();
+    final dismissed = prefs.getBool(_prefKey) ?? false;
+
+    // Read manufacturer via dart:io Platform — works on Android
+    // On Android, Platform.operatingSystemVersion includes manufacturer info
+    // We use a secondary channel; for simplicity we read from the known
+    // SharedPreferences key written at app start via platform channel if available,
+    // otherwise fallback to a known OEM detection heuristic.
+    String manufacturer = '';
+    try {
+      // Try to read cached manufacturer set by native side
+      manufacturer = prefs.getString('device_manufacturer') ?? '';
+    } catch (_) {}
+
+    final oem = _classifyOem(manufacturer);
+
+    if (mounted) {
+      setState(() {
+        _dismissed = dismissed || oem == _OemType.other;
+        _oemType = oem;
+      });
+    }
+  }
+
+  static _OemType _classifyOem(String manufacturer) {
+    final m = manufacturer.toLowerCase();
+    if (m.contains('xiaomi') || m.contains('redmi') || m.contains('poco')) {
+      return _OemType.miui;
+    }
+    if (m.contains('oppo') || m.contains('realme') || m.contains('oneplus')) {
+      return _OemType.colorOs;
+    }
+    if (m.contains('samsung')) {
+      return _OemType.oneUi;
+    }
+    return _OemType.other;
+  }
+
+  Future<void> _dismiss() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefKey, true);
+    if (mounted) setState(() => _dismissed = true);
+  }
+
+  String get _title => switch (_oemType) {
+        _OemType.miui   => '⚡ Paso extra requerido en MIUI',
+        _OemType.colorOs => '⚡ Paso extra requerido en ColorOS',
+        _OemType.oneUi  => '⚡ Paso extra requerido en One UI',
+        _OemType.other  => '',
+      };
+
+  String get _instructions => switch (_oemType) {
+        _OemType.miui =>
+          'Para que los botones flotantes no desaparezcan:\n\n'
+          '1. Ve a Ajustes → Aplicaciones → Floating Volume\n'
+          '2. Toca "Inicio automático" y actívalo ✅\n'
+          '3. También ve a Batería → Ahorro de batería → Sin restricciones',
+        _OemType.colorOs =>
+          'Para evitar que el sistema detenga los botones flotantes:\n\n'
+          '1. Ve a Ajustes → Aplicaciones → Floating Volume\n'
+          '2. Toca "Inicio automático" y actívalo ✅\n'
+          '3. También en Batería → selecciona "Sin restricciones"',
+        _OemType.oneUi =>
+          'Para mantener los botones activos en segundo plano:\n\n'
+          '1. Ve a Ajustes → Aplicaciones → Floating Volume\n'
+          '2. En Batería → selecciona "Sin restricciones"\n'
+          '3. También desactiva "Batería Adaptable" si tienes problemas',
+        _OemType.other => '',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    if (_dismissed) return const SizedBox.shrink();
+
+    return AnimatedOpacity(
+      opacity: _dismissed ? 0 : 1,
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFFB300).withAlpha(120)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+              leading: const Icon(Icons.warning_amber_rounded,
+                  color: Color(0xFFE65100)),
+              title: Text(
+                _title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFBF360C),
+                ),
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.close_rounded,
+                    size: 18, color: Color(0xFFBF360C)),
+                onPressed: _dismiss,
+                tooltip: 'No mostrar de nuevo',
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Text(
+                _instructions,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF5D4037),
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

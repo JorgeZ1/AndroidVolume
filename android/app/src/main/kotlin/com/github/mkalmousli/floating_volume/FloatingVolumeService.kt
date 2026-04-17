@@ -424,7 +424,10 @@ class FloatingVolumeService : Service() {
                 }
         }
 
-        return super.onStartCommand(intent, flags, startId)
+        // START_STICKY: if the OS kills this service (e.g. MIUI/ColorOS memory pressure),
+        // it will be automatically restarted with a null intent. This is the key flag
+        // needed for background survival on aggressive OEM memory managers.
+        return START_STICKY
     }
 
     override fun onDestroy() {

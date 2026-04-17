@@ -44,6 +44,12 @@ class MainActivity : FlutterActivity() {
         val c = this
         val audioManager = c.getSystemService(AUDIO_SERVICE) as android.media.AudioManager
 
+        // Store the device manufacturer so the Flutter UI can detect OEM skins
+        // (MIUI, ColorOS, One UI) and show compatibility guidance to the user.
+        sharedPrefs.edit()
+            .putString("device_manufacturer", Build.MANUFACTURER)
+            .apply()
+
         lifecycleScope.apply {
             /**
              * Create the notification channel for the service.

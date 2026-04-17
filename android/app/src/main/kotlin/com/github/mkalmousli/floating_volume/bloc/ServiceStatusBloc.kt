@@ -2,8 +2,11 @@ package com.github.mkalmousli.floating_volume.bloc
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import com.github.mkalmousli.floating_volume.Const
 import com.github.mkalmousli.floating_volume.FloatingVolumeService
 import com.github.mkalmousli.floating_volume.inMain
+import com.github.mkalmousli.floating_volume.sharedPrefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -35,6 +38,20 @@ object ServiceStatusBloc {
 
 
 
+    /** Key used to persist the service enabled state across reboots. */
+    private const val KEY_SERVICE_ENABLED = "service_enabled"
+
+    /**
+     * Returns true if the service was enabled before the last reboot.
+     * Used by [BootReceiver] to auto-restart the service.
+     */
+    fun wasEnabledBeforeReboot(context: Context): Boolean =
+        context.sharedPrefs.getBoolean(KEY_SERVICE_ENABLED, false)
+
+    private fun persistState(context: Context, on: Boolean) {
+        context.sharedPrefs.edit().putBoolean(KEY_SERVICE_ENABLED, on).apply()
+    }
+
     suspend fun registerEvents(context: Context) {
         val scope = CoroutineScope(Dispatchers.Main)
         val intent = Intent(context, FloatingVolumeService::class.java)
@@ -47,9 +64,18 @@ object ServiceStatusBloc {
                     }
 
                     scope.inMain {
-                        context.startService(intent)
+                        // Use startForegroundService on Android O+ so the OS guarantees
+                        // a 5-second window before requiring startForeground() to be called.
+                        // This prevents ForegroundServiceDidNotStartInTimeException on
+                        // aggressive OEM skins like MIUI, ColorOS and One UI.
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            context.startForegroundService(intent)
+                        } else {
+                            context.startService(intent)
+                        }
                     }.join()
 
+                    persistState(context, true)
                     _state.emit(State.On)
                 }
                 is Event.Stop -> {
@@ -61,6 +87,7 @@ object ServiceStatusBloc {
                         context.stopService(intent)
                     }.join()
 
+                    persistState(context, false)
                     _state.emit(State.Off)
                 }
                 is Event.Toggle -> {
