@@ -76,7 +76,7 @@
 <header>
   <h1>Floating Volume</h1>
   <p>Política de Privacidad</p>
-  <span class="badge">Última actualización: 17 de abril de 2026</span>
+  <span class="badge">Última actualización: 13 de septiembre de 2026</span>
 </header>
 
 <main>
@@ -114,7 +114,7 @@
     <ul>
       <li><strong>SYSTEM_ALERT_WINDOW:</strong> Necesario para mostrar los botones flotantes sobre otras aplicaciones. Sin este permiso la app no puede funcionar.</li>
       <li><strong>REQUEST_IGNORE_BATTERY_OPTIMIZATIONS:</strong> Mantiene el servicio activo en segundo plano, especialmente en dispositivos con gestión agresiva de batería.</li>
-      <li><strong>FOREGROUND_SERVICE / FOREGROUND_SERVICE_MEDIA_PLAYBACK:</strong> Ejecuta el servicio de botones flotantes de forma estable con una notificación persistente.</li>
+      <li><strong>FOREGROUND_SERVICE / FOREGROUND_SERVICE_SPECIAL_USE:</strong> Ejecuta el servicio de controles flotantes activado por el usuario con una notificación persistente. La app no reproduce, graba ni transmite audio.</li>
       <li><strong>MODIFY_AUDIO_SETTINGS:</strong> Permite leer y modificar el volumen del sistema.</li>
       <li><strong>POST_NOTIFICATIONS:</strong> Muestra la notificación de control (requerido en Android 13+).</li>
       <li><strong>RECEIVE_BOOT_COMPLETED:</strong> Reinicia el servicio automáticamente tras un reinicio del dispositivo.</li>
@@ -126,18 +126,20 @@
   <section>
     <h2><span class="icon">📢</span> 4. Publicidad — Google AdMob</h2>
     <p>
-      Floating Volume utiliza Google AdMob para mostrar anuncios de video recompensados
-      en la sección de Estilos Especiales. Google AdMob puede recopilar:
+      Floating Volume utiliza Google AdMob para mostrar un banner mientras la pantalla
+      principal está abierta y anuncios recompensados voluntarios en Estilos Especiales.
+      Completar un anuncio desbloquea el estilo seleccionado durante 24 horas acumulables. Google AdMob puede procesar:
     </p>
     <ul>
       <li>Identificador de publicidad de Android (AAID/GAID)</li>
       <li>Dirección IP (para geolocalización aproximada)</li>
-      <li>Información del dispositivo (modelo, versión de Android)</li>
-      <li>Datos de interacción con anuncios</li>
+      <li>Interacciones con el producto y los anuncios</li>
+      <li>Información de diagnóstico, rendimiento y uso de energía</li>
     </ul>
     <p>
-      Puedes inhabilitar los anuncios personalizados en:<br>
-      <em>Ajustes → Google → Anuncios → "Inhabilitar personalización de anuncios"</em>
+      Cuando sea requerido, puedes revisar o retirar tus decisiones desde
+      <em>Opciones de privacidad de anuncios</em> dentro de la aplicación. Desactivar la
+      personalización no necesariamente elimina los anuncios.
     </p>
     <p>
       <a href="https://policies.google.com/privacy" target="_blank">Política de Privacidad de Google</a> ·
@@ -149,9 +151,8 @@
   <section>
     <h2><span class="icon">⚖️</span> 5. Consentimiento — RGPD / CCPA / LGPD</h2>
     <p>
-      Si resides en el Área Económica Europea (AEE), Reino Unido, California (EE.UU.) o Brasil,
-      al abrir la aplicación por primera vez se mostrará un formulario de consentimiento de Google
-      (User Messaging Platform — UMP) para el uso de datos con fines publicitarios.
+      Cuando las leyes o políticas aplicables lo requieren, se utiliza Google User Messaging
+      Platform (UMP) para solicitar decisiones de privacidad antes de pedir anuncios.
     </p>
     <p>Puedes aceptar o rechazar el uso de datos para publicidad personalizada en cualquier momento.
        Si rechazas, podrás seguir usando la aplicación con anuncios no personalizados.</p>
@@ -188,11 +189,9 @@
   <section>
     <h2><span class="icon">📬</span> 9. Contacto</h2>
     <p>
-      Para preguntas o solicitudes relacionadas con esta política, abre un issue en el
-      repositorio oficial:<br>
-      <a href="https://github.com/JorgeZ1/AndroidVolume/issues" target="_blank">
-        github.com/JorgeZ1/AndroidVolume/issues
-      </a>
+      Para preguntas o solicitudes relacionadas con esta política, escribe a
+      <a href="mailto:fixbyte3@gmail.com">fixbyte3@gmail.com</a>. La versión pública vigente está en
+      <a href="https://www.fixbitsolutions.com/privacy/floating-volume/">fixbitsolutions.com/privacy/floating-volume/</a>.
     </p>
     <hr>
   </section>

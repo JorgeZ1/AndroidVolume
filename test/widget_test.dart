@@ -1,30 +1,39 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:floating_volume/main.dart';
+import 'package:floating_volume/src/widget_settings.dart';
+import 'package:floating_volume/src/services/ad_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('audio streams expose stable user-facing labels', () {
+    expect(AudioStream.media.label, 'Multimedia');
+    expect(AudioStream.notification.label, 'Notificaciones');
+    expect(AudioStream.values, hasLength(6));
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  test('reward countdown communicates 24 hours and accumulated time', () {
+    expect(AdService.formatTimeLeft(const Duration(hours: 24)), '24 h');
+    expect(AdService.formatTimeLeft(const Duration(hours: 48)), '2 d');
+    expect(AdService.formatTimeLeft(const Duration(hours: 18)), '18 h');
+    expect(AdService.formatTimeLeft(const Duration(minutes: 35)), '35 min');
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  test('special-style unlocks are independent', () async {
+    final future = DateTime.now().add(const Duration(hours: 24));
+    SharedPreferences.setMockInitialValues({
+      'special_unlock_rgbAurora_expiry': future.millisecondsSinceEpoch,
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(await AdService.isUnlocked('rgbAurora'), isTrue);
+    expect(await AdService.isUnlocked('rgbNeon'), isFalse);
+  });
+
+  test('legacy global reward remains valid during migration', () async {
+    final future = DateTime.now().add(const Duration(hours: 2));
+    SharedPreferences.setMockInitialValues({
+      'special_unlock_expiry': future.millisecondsSinceEpoch,
+    });
+
+    expect(await AdService.isUnlocked('rgbAurora'), isTrue);
+    expect(await AdService.isUnlocked('retrowave'), isTrue);
   });
 }

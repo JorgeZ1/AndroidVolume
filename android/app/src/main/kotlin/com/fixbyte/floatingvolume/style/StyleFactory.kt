@@ -20,5 +20,8 @@ object StyleFactory {
         WidgetSettings.Style.COSMIC         -> CosmicStyleApplier()
         WidgetSettings.Style.LAVA           -> LavaStyleApplier()
         WidgetSettings.Style.CARDS          -> CardsStyleApplier(isNight)
+        WidgetSettings.Style.GLACIER        -> GlacierStyleApplier()
+        WidgetSettings.Style.MATRIX         -> MatrixStyleApplier()
+        WidgetSettings.Style.RETROWAVE      -> RetrowaveStyleApplier()
     }
 }

@@ -47,6 +47,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
 
     private val trackView = android.view.View(context).apply { background = trackBg }
     private val fillView  = android.view.View(context).apply { background = fillBg }
+    private val trackFrame = FrameLayout(context)
 
     private val iconLabel = TextView(context).apply {
         text     = "VOL"
@@ -90,7 +91,6 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         addView(android.view.View(context), LayoutParams(w, dp(6))) // spacer
 
         // Track + fill stacked in a FrameLayout
-        val trackFrame = FrameLayout(context)
         val trackW = dp(8)
         val trackH = dp(TRACK_H_DP)
 
@@ -111,16 +111,37 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
 
     // ── Public API ────────────────────────────────────────────────────────────
 
+    /**
+     * Maps a touch Y coordinate (in this view's coordinate space) to a volume
+     * fraction along the track: top of the track = 1f, bottom = 0f. Touches
+     * above/below the track clamp to the nearest end.
+     */
+    fun fractionForTouch(yInView: Float): Float {
+        val top    = trackFrame.top.toFloat()
+        val bottom = trackFrame.bottom.toFloat()
+        if (bottom <= top) return currentFraction
+        return (1f - (yInView - top) / (bottom - top)).coerceIn(0f, 1f)
+    }
+
     fun update(volume: Int, maxVolume: Int) {
         currentFraction = if (maxVolume > 0) volume / maxVolume.toFloat() else 0f
         numberLabel.text = volume.toString()
         updateFill()
     }
 
+    /** Keeps the compact indicator honest about which stream it is controlling. */
+    fun setStream(stream: AudioStream) {
+        iconLabel.text = stream.symbol
+        contentDescription = "${stream.label}: ${numberLabel.text}"
+    }
+
     /** Call whenever [WidgetSettings] changes (color mode, style, opacity). */
     fun applyStyle() {
         stopFillAnimation()
         iconLabel.visibility = android.view.View.VISIBLE
+        iconLabel.text       = "VOL"
+        iconLabel.typeface   = Typeface.DEFAULT_BOLD
+        numberLabel.typeface = Typeface.DEFAULT_BOLD
 
         val isDark = resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
@@ -136,6 +157,17 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
             WidgetSettings.Style.COSMIC        -> applyCosmic()
             WidgetSettings.Style.LAVA          -> applyLava()
             WidgetSettings.Style.CARDS         -> applyCards(isDark)
+            WidgetSettings.Style.GLACIER       -> applyGlacier()
+            WidgetSettings.Style.MATRIX        -> applyMatrix()
+            WidgetSettings.Style.RETROWAVE     -> applyRetrowave()
+        }
+
+        // User-controlled visibility overrides (Opciones Avanzadas)
+        numberLabel.visibility =
+            if (WidgetSettings.showIndicatorNumber) android.view.View.VISIBLE
+            else android.view.View.GONE
+        if (!WidgetSettings.showIndicatorIcon) {
+            iconLabel.visibility = android.view.View.GONE
         }
     }
 
@@ -152,6 +184,11 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         val fill  = Color.parseColor("#2979FF")
         val text  = if (isDark) Color.WHITE else Color.parseColor("#2979FF")
         apply(card, track, fill, text)
+        // Subtle outline so the card reads as a bordered pill (matches preview)
+        cardBg.setStroke(
+            dp(1),
+            if (isDark) Color.argb(70, 255, 255, 255) else Color.argb(45, 0, 0, 0),
+        )
         iconLabel.setTextColor(Color.argb(180, 41, 121, 255)) // blue tinted
     }
 
@@ -174,6 +211,8 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         trackBg.setColor(Color.argb(50, 255, 255, 255))
         fillBg.setColor(Color.WHITE)
         numberLabel.setTextColor(Color.WHITE)
+        // iOS HUD shows a speaker glyph, not the word "VOL"
+        iconLabel.text = "🔊"
         iconLabel.setTextColor(Color.argb(180, 255, 255, 255))
     }
 
@@ -184,13 +223,15 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
         trackBg.setColor(Color.argb(50, 255, 255, 255))
         fillBg.setColor(orange)
         numberLabel.setTextColor(orange)
+        // MIUI's volume panel uses a speaker glyph
+        iconLabel.text = "🔊"
         iconLabel.setTextColor(Color.argb(180, 255, 105, 0))
     }
 
     private fun applyOneUi() {
         val teal = Color.parseColor("#1DB3A8")
         cardBg.setColor(Color.argb(50, 20, 20, 25))
-        cardBg.setStroke(0, Color.TRANSPARENT)
+        cardBg.setStroke(dp(1), Color.argb(70, 255, 255, 255))
         trackBg.setColor(Color.argb(60, 255, 255, 255))
         fillBg.setColor(teal)
         numberLabel.setTextColor(teal)
@@ -323,6 +364,97 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
                 cardBg.setStroke(dp(1), lerpColor(
                     Color.argb(160, 255, 69, 0),
                     Color.argb(255, 255, 180, 0), t))
+            }
+            start()
+        }
+    }
+
+    private fun applyGlacier() {
+        cardBg.setColor(Color.parseColor("#08131F"))
+        cardBg.setStroke(0, Color.TRANSPARENT)
+        trackBg.setColor(Color.argb(60, 255, 255, 255))
+        fillBg.setColor(Color.parseColor("#38B6D4"))
+        numberLabel.setTextColor(Color.parseColor("#E3FCFF"))
+        iconLabel.setTextColor(Color.argb(200, 227, 252, 255))
+
+        val animSpeed = WidgetSettings.creativeAnimSpeed.takeIf { it > 0 } ?: 1f
+        val glowWidth = dp(2).toFloat() * WidgetSettings.creativeGlowIntensity * 1.2f
+        animatedBorder = com.fixbyte.floatingvolume.style.RotatingBorderDrawable(
+            glowWidth, dp(18).toFloat(), intArrayOf(
+                Color.WHITE, Color.TRANSPARENT,
+                Color.parseColor("#7FF6FF"), Color.TRANSPARENT, Color.WHITE
+            )
+        )
+
+        fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration    = (6_000L / animSpeed).toLong()
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode  = ValueAnimator.RESTART
+            addUpdateListener { anim ->
+                val t = anim.animatedValue as Float
+                animatedBorder?.rotation = t * 360f
+                val wave = (Math.sin(t * Math.PI * 2) * 0.5 + 0.5).toFloat()
+                fillBg.setColor(lerpColor(0xFF38B6D4.toInt(), 0xFF52E5C4.toInt(), wave))
+                invalidate()
+            }
+            start()
+        }
+    }
+
+    private fun applyMatrix() {
+        val green = Color.parseColor("#00FF41")
+        cardBg.setColor(Color.parseColor("#020A02"))
+        cardBg.setStroke(dp(1), green)
+        trackBg.setColor(Color.argb(50, 0, 255, 65))
+        fillBg.setColor(green)
+        numberLabel.setTextColor(green)
+        numberLabel.typeface = Typeface.MONOSPACE
+        iconLabel.setTextColor(Color.argb(200, 0, 255, 65))
+        iconLabel.typeface = Typeface.MONOSPACE
+
+        val animSpeed = WidgetSettings.creativeAnimSpeed.takeIf { it > 0 } ?: 1f
+        fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration    = (1_800L / animSpeed).toLong()
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode  = ValueAnimator.RESTART
+            addUpdateListener { anim ->
+                val t     = anim.animatedValue as Float
+                val pulse = (Math.sin(t * Math.PI * 2) * 0.5 + 0.5).toFloat()
+                val c     = lerpColor(0xFF007718.toInt(), 0xFF00FF41.toInt(), pulse)
+                fillBg.setColor(c)
+                cardBg.setStroke(dp(1), c)
+            }
+            start()
+        }
+    }
+
+    private fun applyRetrowave() {
+        cardBg.setColor(Color.parseColor("#1A0B3D"))
+        cardBg.setStroke(0, Color.TRANSPARENT)
+        trackBg.setColor(Color.argb(60, 255, 41, 117))
+        fillBg.setColor(Color.parseColor("#FF2975"))
+        numberLabel.setTextColor(Color.parseColor("#00E5FF"))
+        iconLabel.setTextColor(Color.argb(200, 0, 229, 255))
+
+        val animSpeed = WidgetSettings.creativeAnimSpeed.takeIf { it > 0 } ?: 1f
+        val glowWidth = dp(2).toFloat() * WidgetSettings.creativeGlowIntensity * 1.2f
+        animatedBorder = com.fixbyte.floatingvolume.style.RotatingBorderDrawable(
+            glowWidth, dp(18).toFloat(), intArrayOf(
+                Color.parseColor("#FF2975"), Color.TRANSPARENT,
+                Color.parseColor("#00E5FF"), Color.TRANSPARENT, Color.parseColor("#FF2975")
+            )
+        )
+
+        fillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration    = (5_000L / animSpeed).toLong()
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode  = ValueAnimator.RESTART
+            addUpdateListener { anim ->
+                val t = anim.animatedValue as Float
+                animatedBorder?.rotation = t * 360f
+                val pingPong = (Math.sin(t * Math.PI * 2) * 0.5 + 0.5).toFloat()
+                fillBg.setColor(lerpColor(0xFFFF2975.toInt(), 0xFFFF8C42.toInt(), pingPong))
+                invalidate()
             }
             start()
         }

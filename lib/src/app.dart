@@ -52,6 +52,17 @@ class _FloatingVolumeAppView extends StatelessWidget {
       seedColor: _seed,
       brightness: Brightness.light,
     ),
+    scaffoldBackgroundColor: const Color(0xFFF7F8FC),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFFF7F8FC),
+      surfaceTintColor: Colors.transparent,
+    ),
+    cardTheme: CardThemeData(
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+    ),
   );
 
   static final _darkTheme = ThemeData(
@@ -59,6 +70,17 @@ class _FloatingVolumeAppView extends StatelessWidget {
     colorScheme: ColorScheme.fromSeed(
       seedColor: _seed,
       brightness: Brightness.dark,
+    ),
+    scaffoldBackgroundColor: const Color(0xFF101114),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF101114),
+      surfaceTintColor: Colors.transparent,
+    ),
+    cardTheme: CardThemeData(
+      color: const Color(0xFF181A20),
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
     ),
   );
 

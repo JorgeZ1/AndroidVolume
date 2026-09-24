@@ -68,6 +68,11 @@ class FloatingVolumeView(context: Context) : LinearLayout(context) {
         alpha = WidgetSettings.opacity
     }
 
+    /** Avoid spending GPU cycles while only the edge recovery tab is visible. */
+    fun pauseStyleAnimation() {
+        currentApplier?.stopAnimation()
+    }
+
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         if (WidgetSettings.colorMode == WidgetSettings.ColorMode.AUTO) applyTheme()

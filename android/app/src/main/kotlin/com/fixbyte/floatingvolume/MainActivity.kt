@@ -204,6 +204,32 @@ class MainActivity : FlutterActivity() {
                             WidgetSettings.save(sharedPrefs)
                             result.success(null)
                         }
+                        "setAudioStream" -> {
+                            WidgetSettings.selectedAudioStream = AudioStream.fromName(call.argument<String>("value"))
+                            WidgetSettings.save(sharedPrefs)
+                            lifecycleScope.inIO { SystemVolumeBloc.event.emit(SystemVolumeBloc.Event.SelectStream(WidgetSettings.selectedAudioStream)) }
+                            result.success(null)
+                        }
+                        "setShowAudioMixer" -> {
+                            WidgetSettings.showAudioMixer = call.argument<Boolean>("value") ?: true
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setAutoPeekEnabled" -> {
+                            WidgetSettings.autoPeekEnabled = call.argument<Boolean>("value") ?: true
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setAutoPeekDelay" -> {
+                            WidgetSettings.autoPeekDelay = (call.argument<Int>("value") ?: 1800).coerceIn(1000, 30000)
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setPeekSize" -> {
+                            WidgetSettings.peekSize = (call.argument<Int>("value") ?: 16).coerceIn(8, 24)
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
                         "setCreativeAnimSpeed" -> {
                             val v = call.argument<Double>("value") ?: 1.0
                             WidgetSettings.creativeAnimSpeed = v.toFloat()
@@ -253,6 +279,26 @@ class MainActivity : FlutterActivity() {
                         }
                         "setIndicatorHideDelay" -> {
                             WidgetSettings.indicatorHideDelay = call.argument<Int>("value") ?: 1800
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setVolumeStep" -> {
+                            WidgetSettings.volumeStep = (call.argument<Int>("value") ?: 1).coerceIn(1, 5)
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setHapticFeedback" -> {
+                            WidgetSettings.hapticFeedback = call.argument<Boolean>("value") ?: false
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setShowIndicatorNumber" -> {
+                            WidgetSettings.showIndicatorNumber = call.argument<Boolean>("value") ?: true
+                            WidgetSettings.save(sharedPrefs)
+                            result.success(null)
+                        }
+                        "setShowIndicatorIcon" -> {
+                            WidgetSettings.showIndicatorIcon = call.argument<Boolean>("value") ?: true
                             WidgetSettings.save(sharedPrefs)
                             result.success(null)
                         }
