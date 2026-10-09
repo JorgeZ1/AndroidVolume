@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "640819350940",
+    "project_id": "floating-volume",
+    "storage_bucket": "floating-volume.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:640819350940:android:8ea6b128bf1f9ce1b14c59",
+        "android_client_info": {
+          "package_name": "com.fixbyte.floatingvolume"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhVNpxrCkQf6cX5zccvuUoxHkoVz3ZAbM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:640819350940:android:8d0023a18735b3f2b14c59",
+        "android_client_info": {
+          "package_name": "com.fixbyte.floatingvolume.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhVNpxrCkQf6cX5zccvuUoxHkoVz3ZAbM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

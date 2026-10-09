@@ -8,18 +8,10 @@ import com.fixbyte.floatingvolume.WidgetSettings
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-private fun roundRectDrawable(color: Int, cornerDp: Float, borderColor: Int = Color.TRANSPARENT, borderWidthPx: Int = 0) =
+private fun roundRectDrawable(color: Int, cornerPx: Float, borderColor: Int = Color.TRANSPARENT, borderWidthPx: Int = 0) =
     GradientDrawable().apply {
         shape = GradientDrawable.RECTANGLE
-        cornerRadius = cornerDp
-        setColor(color)
-        if (borderWidthPx > 0) setStroke(borderWidthPx, borderColor)
-    }
-
-/** Always produces a perfect circle regardless of buttonCornerRadius setting. */
-private fun circleDrawable(color: Int, borderColor: Int = Color.TRANSPARENT, borderWidthPx: Int = 0) =
-    GradientDrawable().apply {
-        shape = GradientDrawable.OVAL
+        cornerRadius = cornerPx
         setColor(color)
         if (borderWidthPx > 0) setStroke(borderWidthPx, borderColor)
     }
@@ -62,9 +54,8 @@ class AndroidStyleApplier(
                 else         Color.WHITE to Color.parseColor("#2979FF")
         }
         val elev = dp(if (isNight || colorMode == WidgetSettings.ColorMode.DARK) 3 else 5)
-        // Always use OVAL — Android style buttons must be perfect circles
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { circleDrawable(circleBg) }, iconColor, elev)
+            { roundRectDrawable(circleBg, dp(dynamicCornerDp).toFloat()) }, iconColor, elev)
     }
 }
 
@@ -77,9 +68,8 @@ class Android12StyleApplier : ButtonStyleApplier {
         plusLabel: TextView, minusLabel: TextView,
         dp: (Number) -> Int,
     ) {
-        // Always use OVAL — Android 12 style buttons must be perfect circles
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { circleDrawable(Color.parseColor("#2979FF")) }, Color.WHITE, dp(3))
+            { roundRectDrawable(Color.parseColor("#2979FF"), dp(dynamicCornerDp).toFloat()) }, Color.WHITE, dp(3))
     }
 }
 
@@ -93,11 +83,10 @@ class IosStyleApplier : ButtonStyleApplier {
         dp: (Number) -> Int,
     ) {
         // Translucent frosted-glass look: white with low alpha + white border
-        // Always use OVAL — iOS style buttons must be perfect circles
         val glassBg = Color.argb(50, 255, 255, 255)
         val border  = Color.argb(80, 255, 255, 255)
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { circleDrawable(glassBg, border, dp(1)) },
+            { roundRectDrawable(glassBg, dp(dynamicCornerDp).toFloat(), border, dp(1)) },
             Color.WHITE, dp(4))
     }
 }
@@ -115,7 +104,7 @@ class MiuiStyleApplier : ButtonStyleApplier {
         val bgColor   = Color.argb(30, 255, 255, 255)
         val borderPx  = dp(2)
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { roundRectDrawable(bgColor, dynamicCornerDp, orange, borderPx) },
+            { roundRectDrawable(bgColor, dp(dynamicCornerDp).toFloat(), orange, borderPx) },
             orange, dp(2))
     }
 }
@@ -132,7 +121,7 @@ class OneUiStyleApplier : ButtonStyleApplier {
         val teal    = Color.parseColor("#1DB3A8")
         val bgColor = Color.argb(40, 29, 179, 168)   // teal with low alpha
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { roundRectDrawable(bgColor, dynamicCornerDp) },
+            { roundRectDrawable(bgColor, dp(dynamicCornerDp).toFloat()) },
             teal, dp(3))
     }
 }
@@ -150,7 +139,7 @@ class CardsStyleApplier(private val isNight: Boolean) : ButtonStyleApplier {
         val bgColor   = if (isNight) Color.parseColor("#2C2C2E") else Color.WHITE
         val iconColor = if (isNight) Color.WHITE else Color.parseColor("#1A1A1A")
         applyToButtons(plusBtn, minusBtn, plusLabel, minusLabel,
-            { roundRectDrawable(bgColor, dynamicCornerDp) },
+            { roundRectDrawable(bgColor, dp(dynamicCornerDp).toFloat()) },
             iconColor, dp(8))
     }
 }

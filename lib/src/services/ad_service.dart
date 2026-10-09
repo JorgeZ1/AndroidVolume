@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'monitoring_service.dart';
 
 /// Manages consent, AdMob initialization, ads, and the temporary unlock state.
 class AdService {
@@ -27,7 +29,9 @@ class AdService {
 
   static const String _legacyPrefKey = 'special_unlock_expiry';
   static const String _stylePrefPrefix = 'special_unlock_';
-  static const Duration _unlockDuration = Duration(hours: 24);
+  static const String featuredStylePrefKey = 'special_featured_style';
+  static const String featuredExpiryPrefKey = 'special_featured_expiry';
+  static const Duration rewardDuration = Duration(hours: 72);
 
   static RewardedAd? _ad;
   static bool _loading = false;
@@ -98,22 +102,73 @@ class AdService {
   static DateTime _effectiveExpiry(SharedPreferences prefs, String styleKey) {
     final legacy = _expiryFrom(prefs, _legacyPrefKey);
     final individual = _expiryFrom(prefs, _stylePrefKey(styleKey));
-    return legacy.isAfter(individual) ? legacy : individual;
+    final featured =
+        prefs.getString(featuredStylePrefKey) == styleKey
+            ? _expiryFrom(prefs, featuredExpiryPrefKey)
+            : DateTime.fromMillisecondsSinceEpoch(0);
+    return [
+      legacy,
+      individual,
+      featured,
+    ].reduce((latest, expiry) => expiry.isAfter(latest) ? expiry : latest);
+  }
+
+  /// Returns the persisted free style for the current 72-hour cycle, creating
+  /// a new random one when the previous cycle has expired.
+  static Future<FeaturedSpecialStyle> getFeaturedSpecialStyle(
+    List<String> availableStyleKeys, {
+    DateTime? now,
+    Random? random,
+  }) async {
+    if (availableStyleKeys.isEmpty) {
+      throw ArgumentError.value(
+        availableStyleKeys,
+        'availableStyleKeys',
+        'At least one special style is required.',
+      );
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final currentTime = now ?? DateTime.now();
+    final currentKey = prefs.getString(featuredStylePrefKey);
+    final currentExpiry = _expiryFrom(prefs, featuredExpiryPrefKey);
+    if (currentKey != null &&
+        availableStyleKeys.contains(currentKey) &&
+        currentExpiry.isAfter(currentTime)) {
+      return FeaturedSpecialStyle(currentKey, currentExpiry);
+    }
+
+    final previousKey = currentKey;
+    final candidates =
+        availableStyleKeys.length > 1
+            ? availableStyleKeys.where((key) => key != previousKey).toList()
+            : availableStyleKeys;
+    final chooser = random ?? Random.secure();
+    final selected = candidates[chooser.nextInt(candidates.length)];
+    final expiresAt = currentTime.add(rewardDuration);
+    await prefs.setString(featuredStylePrefKey, selected);
+    await prefs.setInt(featuredExpiryPrefKey, expiresAt.millisecondsSinceEpoch);
+    return FeaturedSpecialStyle(selected, expiresAt);
   }
 
   static Future<String?> timeLeftLabel(String styleKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    final expiry = _effectiveExpiry(prefs, styleKey);
-    if (!expiry.isAfter(DateTime.now())) return null;
+    final expiry = await unlockExpiry(styleKey);
+    if (expiry == null) return null;
     return formatTimeLeft(expiry.difference(DateTime.now()));
   }
 
-  @visibleForTesting
+  /// Effective access expiry, including the current free featured cycle.
+  static Future<DateTime?> unlockExpiry(String styleKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    final expiry = _effectiveExpiry(prefs, styleKey);
+    return expiry.isAfter(DateTime.now()) ? expiry : null;
+  }
+
   static String formatTimeLeft(Duration diff) {
     final remainingMinutes = (diff.inSeconds / 60).ceil();
 
-    if (remainingMinutes == _unlockDuration.inMinutes) {
-      return '24 h';
+    if (remainingMinutes == rewardDuration.inMinutes) {
+      return '3 d';
     }
 
     if (remainingMinutes >= Duration.minutesPerDay) {
@@ -133,14 +188,42 @@ class AdService {
     return '$remainingMinutes min';
   }
 
+  /// Compact countdown for small badges. Keep [formatTimeLeft] for accessible
+  /// labels and places where the full day/hour breakdown is useful.
+  static String formatCompactTimeLeft(Duration diff) {
+    final remainingMinutes = (diff.inSeconds / 60).ceil();
+    if (remainingMinutes <= 0) return '0m';
+    if (remainingMinutes >= Duration.minutesPerDay) {
+      final days = (remainingMinutes / Duration.minutesPerDay).ceil();
+      return '${days}d';
+    }
+    if (remainingMinutes >= Duration.minutesPerHour) {
+      final hours = remainingMinutes ~/ Duration.minutesPerHour;
+      return '${hours}h';
+    }
+    return '${remainingMinutes}m';
+  }
+
+  @visibleForTesting
+  static DateTime nextRewardExpiry(
+    DateTime currentExpiry,
+    DateTime now, {
+    DateTime? featuredExpiry,
+  }) {
+    var start = currentExpiry.isAfter(now) ? currentExpiry : now;
+    if (featuredExpiry != null && featuredExpiry.isAfter(start)) {
+      start = featuredExpiry;
+    }
+    return start.add(rewardDuration);
+  }
+
   static Future<void> _grantUnlock(String styleKey) async {
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
     final effectiveExpiry = _effectiveExpiry(prefs, styleKey);
-    final start = effectiveExpiry.isAfter(now) ? effectiveExpiry : now;
     await prefs.setInt(
       _stylePrefKey(styleKey),
-      start.add(_unlockDuration).millisecondsSinceEpoch,
+      nextRewardExpiry(effectiveExpiry, now).millisecondsSinceEpoch,
     );
   }
 
@@ -164,14 +247,23 @@ class AdService {
     if (_ad == null) return false;
 
     var rewardEarned = false;
+    unawaited(MonitoringService.event('rewarded_requested'));
     _ad!.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
+        unawaited(
+          MonitoringService.event(
+            rewardEarned
+                ? 'rewarded_closed_earned'
+                : 'rewarded_closed_unearned',
+          ),
+        );
         ad.dispose();
         _ad = null;
         _preload();
         if (!rewardEarned) onClosedWithoutReward?.call();
       },
       onAdFailedToShowFullScreenContent: (ad, _) {
+        unawaited(MonitoringService.event('rewarded_show_failed'));
         ad.dispose();
         _ad = null;
         _preload();
@@ -182,6 +274,7 @@ class AdService {
     _ad!.show(
       onUserEarnedReward: (_, __) async {
         rewardEarned = true;
+        unawaited(MonitoringService.event('rewarded_earned'));
         await _grantUnlock(styleKey);
         onRewarded();
       },
@@ -236,4 +329,11 @@ class AdService {
       await done.future.timeout(const Duration(seconds: 10), onTimeout: () {});
     } catch (_) {}
   }
+}
+
+class FeaturedSpecialStyle {
+  const FeaturedSpecialStyle(this.styleKey, this.expiresAt);
+
+  final String styleKey;
+  final DateTime expiresAt;
 }

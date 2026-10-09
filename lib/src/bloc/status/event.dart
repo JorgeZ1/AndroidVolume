@@ -1,1 +1,1 @@
-enum Event { initialize, enable, disable, toggle }
+enum Event { initialize, enable, disable, toggle, nativeStatusChanged }

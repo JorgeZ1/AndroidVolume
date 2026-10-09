@@ -32,75 +32,93 @@ object WidgetSettings {
     }
 
     var colorMode: ColorMode = ColorMode.AUTO
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
 
     var opacity: Float = 0.70f
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
 
     var style: Style = Style.ANDROID
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
 
     var isPinned: Boolean = false
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
 
     var buttonSize: Int = 44
-        set(value) { field = value; dispatch() }
-    var buttonCornerRadius: Float = 0.5f   // 0 = square, 1 = fully rounded
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
+    var buttonCornerRadius: Float = 0.5f   // 0 = square, 0.5 = fully rounded
+        set(value) { if (field != value) { field = value; dispatch() } }
     var buttonGap: Int = 10
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
 
     var indicatorOpacity: Float = 0.85f
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     var indicatorHeight: Int = 135
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     var indicatorWidth: Int = 36
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     var indicatorGap: Int = 10
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     var indicatorHideDelay: Int = 1800
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     var indicatorAnimation: String = "fade"
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     var useSystemVolume: Boolean = false
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
 
     /** Stream controlled by the main +/- buttons and the compact indicator. */
     var selectedAudioStream: AudioStream = AudioStream.MEDIA
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     var showAudioMixer: Boolean = true
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     var autoPeekEnabled: Boolean = true
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     var autoPeekDelay: Int = 1800
-        set(value) { field = value; dispatch() }
-    var peekSize: Int = 16
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
+    var peekSize: Int = 20
+        set(value) { if (field != value) { field = value; dispatch() } }
 
     var creativeAnimSpeed: Float = 1.0f
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
 
     var creativeGlowIntensity: Float = 1.0f
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
 
     /** How many volume levels a single +/- tap moves. */
     var volumeStep: Int = 1
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     /** Vibrate on +/- tap. */
     var hapticFeedback: Boolean = false
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     /** Show the numeric volume level on the indicator. */
     var showIndicatorNumber: Boolean = true
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
     /** Show the bottom label/icon (VOL / speaker) on the indicator. */
     var showIndicatorIcon: Boolean = true
-        set(value) { field = value; dispatch() }
+        set(value) { if (field != value) { field = value; dispatch() } }
 
     private val listeners = mutableListOf<() -> Unit>()
+    private var batchDepth = 0
+    private var pendingDispatch = false
+    private var revision = 0L
 
     fun addListener(l: () -> Unit)    { listeners.add(l) }
     fun removeListener(l: () -> Unit) { listeners.remove(l) }
-    private fun dispatch()            { listeners.forEach { it() } }
+    private fun dispatch() {
+        if (batchDepth > 0) { pendingDispatch = true; return }
+        revision++
+        listeners.toList().forEach { it() }
+    }
+
+    private fun batch(block: () -> Unit) {
+        batchDepth++
+        try { block() } finally {
+            batchDepth--
+            if (batchDepth == 0 && pendingDispatch) {
+                pendingDispatch = false
+                dispatch()
+            }
+        }
+    }
 
     // ── Persistence ───────────────────────────────────────────────────────────
 
@@ -130,36 +148,93 @@ object WidgetSettings {
     private const val KEY_IND_NUMBER   = "widget_ind_number"
     private const val KEY_IND_ICON     = "widget_ind_icon"
 
-    fun load(prefs: SharedPreferences) {
-        colorMode = ColorMode.entries.getOrElse(prefs.getInt(KEY_COLOR_MODE, 0)) { ColorMode.AUTO }
-        opacity   = prefs.getFloat(KEY_OPACITY, 0.70f)
-        style     = Style.entries.getOrElse(prefs.getInt(KEY_STYLE, 0)) { Style.ANDROID }
-        isPinned  = prefs.getBoolean(KEY_PINNED, false)
-        buttonSize           = prefs.getInt(KEY_BTN_SIZE, 44)
-        buttonCornerRadius   = prefs.getFloat(KEY_BTN_CORNER, 0.5f)
-        buttonGap            = prefs.getInt(KEY_BTN_GAP, 10)
-        indicatorOpacity     = prefs.getFloat(KEY_IND_OPACITY, 0.85f)
-        indicatorHeight      = prefs.getInt(KEY_IND_HEIGHT, 135)
-        indicatorWidth       = prefs.getInt(KEY_IND_WIDTH, 36)
-        indicatorGap         = prefs.getInt(KEY_IND_GAP, 10)
-        indicatorHideDelay   = prefs.getInt(KEY_IND_DELAY, 1800)
-        indicatorAnimation   = prefs.getString(KEY_IND_ANIM, "fade") ?: "fade"
-        useSystemVolume      = prefs.getBoolean(KEY_USE_SYS_VOL, false)
-        selectedAudioStream  = AudioStream.fromName(prefs.getString(KEY_AUDIO_STREAM, AudioStream.MEDIA.name))
-        showAudioMixer       = prefs.getBoolean(KEY_SHOW_MIXER, true)
-        autoPeekEnabled      = prefs.getBoolean(KEY_AUTO_PEEK, true)
-        val storedPeekDelay  = prefs.getInt(KEY_PEEK_DELAY, 1800)
-        // Earlier releases used the temporary-panel delay (4–5 s) for the buttons.
-        // Migrate those shipped defaults to the compact indicator's 1.8 s behavior.
-        autoPeekDelay        = if (storedPeekDelay == 4000 || storedPeekDelay == 5000) 1800
-                               else storedPeekDelay.coerceIn(1000, 30000)
-        peekSize             = prefs.getInt(KEY_PEEK_SIZE, 16).coerceIn(8, 24)
-        creativeAnimSpeed    = prefs.getFloat(KEY_CRT_SPEED, 1.0f)
-        creativeGlowIntensity= prefs.getFloat(KEY_CRT_GLOW, 1.0f)
-        volumeStep           = prefs.getInt(KEY_VOL_STEP, 1)
-        hapticFeedback       = prefs.getBoolean(KEY_HAPTIC, false)
-        showIndicatorNumber  = prefs.getBoolean(KEY_IND_NUMBER, true)
-        showIndicatorIcon    = prefs.getBoolean(KEY_IND_ICON, true)
+    private fun cornerKey(style: Style) = "${KEY_BTN_CORNER}_${style.name}"
+
+    fun defaultCornerRadius(style: Style): Float = when (style) {
+        Style.MIUI -> 0.2f
+        Style.SAMSUNG_ONE_UI -> 0.3f
+        Style.CARDS -> 0.25f
+        else -> 0.5f
+    }
+
+    fun selectStyle(newStyle: Style, prefs: SharedPreferences) {
+        buttonCornerRadius = prefs.getFloat(cornerKey(newStyle), defaultCornerRadius(newStyle))
+            .coerceIn(0f, 0.5f)
+        style = newStyle
+    }
+
+    fun load(prefs: SharedPreferences, legacy: SharedPreferences? = null) {
+        val values = SettingsContract.persisted(prefs.all, legacy?.all ?: emptyMap<String, Any>())
+        batch {
+            applySnapshot(values)
+            if ((prefs.all["widget_settings_schema"] as? Number)?.toInt()?.let { it >= 1 } != true) {
+                save(prefs)
+                prefs.edit().putInt("widget_settings_schema", 1).apply()
+            }
+        }
+    }
+
+    /** Read-only: no preference writes, reloads, or overlay notifications. */
+    fun snapshot(): Map<String, Any> = mapOf(
+        "colorMode" to colorMode.name.lowercase(), "opacity" to opacity.toDouble(),
+        "style" to SettingsContract.styleName(style.ordinal), "isPinned" to isPinned,
+        "buttonSize" to buttonSize, "buttonCornerRadius" to buttonCornerRadius.toDouble(),
+        "buttonGap" to buttonGap, "indicatorOpacity" to indicatorOpacity.toDouble(),
+        "indicatorHeight" to indicatorHeight, "indicatorWidth" to indicatorWidth,
+        "indicatorGap" to indicatorGap, "indicatorHideDelay" to indicatorHideDelay,
+        "indicatorAnimation" to indicatorAnimation, "useSystemVolume" to useSystemVolume,
+        "selectedAudioStream" to selectedAudioStream.name, "showAudioMixer" to showAudioMixer,
+        "autoPeekEnabled" to autoPeekEnabled, "autoPeekDelay" to autoPeekDelay,
+        "peekSize" to peekSize, "creativeAnimSpeed" to creativeAnimSpeed.toDouble(),
+        "creativeGlowIntensity" to creativeGlowIntensity.toDouble(), "volumeStep" to volumeStep,
+        "hapticFeedback" to hapticFeedback, "showIndicatorNumber" to showIndicatorNumber,
+        "showIndicatorIcon" to showIndicatorIcon, "revision" to revision,
+    )
+
+    fun update(changes: Map<String, Any?>, prefs: SharedPreferences): Map<String, Any> {
+        require(changes.keys.all { key -> SettingsContract.specs.any { it.name == key } })
+        batch {
+            val merged = (snapshot() + changes).toMutableMap()
+            if (changes.containsKey("style") && !changes.containsKey("buttonCornerRadius")) {
+                val nextStyle = Style.fromName(SettingsContract.normalize(merged)["style"] as String)
+                merged["buttonCornerRadius"] = (prefs.all[cornerKey(nextStyle)] as? Number)?.toDouble()
+                    ?: defaultCornerRadius(nextStyle).toDouble()
+            }
+            applySnapshot(SettingsContract.normalize(merged))
+            save(prefs)
+        }
+        return snapshot()
+    }
+
+    fun restore(section: String, prefs: SharedPreferences): Map<String, Any> =
+        update(SettingsContract.defaults(section, SettingsContract.styleName(style.ordinal)), prefs)
+
+    private fun applySnapshot(values: Map<String, Any>) {
+        colorMode = ColorMode.valueOf((values.getValue("colorMode") as String).uppercase())
+        opacity = (values.getValue("opacity") as Number).toFloat()
+        style = Style.fromName(values.getValue("style") as String)
+        isPinned = values.getValue("isPinned") as Boolean
+        buttonSize = (values.getValue("buttonSize") as Number).toInt()
+        buttonCornerRadius = (values.getValue("buttonCornerRadius") as Number).toFloat()
+        buttonGap = (values.getValue("buttonGap") as Number).toInt()
+        indicatorOpacity = (values.getValue("indicatorOpacity") as Number).toFloat()
+        indicatorHeight = (values.getValue("indicatorHeight") as Number).toInt()
+        indicatorWidth = (values.getValue("indicatorWidth") as Number).toInt()
+        indicatorGap = (values.getValue("indicatorGap") as Number).toInt()
+        indicatorHideDelay = (values.getValue("indicatorHideDelay") as Number).toInt()
+        indicatorAnimation = values.getValue("indicatorAnimation") as String
+        useSystemVolume = values.getValue("useSystemVolume") as Boolean
+        selectedAudioStream = AudioStream.fromName(values.getValue("selectedAudioStream") as String)
+        showAudioMixer = values.getValue("showAudioMixer") as Boolean
+        autoPeekEnabled = values.getValue("autoPeekEnabled") as Boolean
+        autoPeekDelay = (values.getValue("autoPeekDelay") as Number).toInt()
+        peekSize = (values.getValue("peekSize") as Number).toInt()
+        creativeAnimSpeed = (values.getValue("creativeAnimSpeed") as Number).toFloat()
+        creativeGlowIntensity = (values.getValue("creativeGlowIntensity") as Number).toFloat()
+        volumeStep = (values.getValue("volumeStep") as Number).toInt()
+        hapticFeedback = values.getValue("hapticFeedback") as Boolean
+        showIndicatorNumber = values.getValue("showIndicatorNumber") as Boolean
+        showIndicatorIcon = values.getValue("showIndicatorIcon") as Boolean
     }
 
     fun save(prefs: SharedPreferences) {
@@ -170,6 +245,7 @@ object WidgetSettings {
             .putBoolean(KEY_PINNED,  isPinned)
             .putInt(KEY_BTN_SIZE,    buttonSize)
             .putFloat(KEY_BTN_CORNER, buttonCornerRadius)
+            .putFloat(cornerKey(style), buttonCornerRadius)
             .putInt(KEY_BTN_GAP,     buttonGap)
             .putFloat(KEY_IND_OPACITY, indicatorOpacity)
             .putInt(KEY_IND_HEIGHT,  indicatorHeight)

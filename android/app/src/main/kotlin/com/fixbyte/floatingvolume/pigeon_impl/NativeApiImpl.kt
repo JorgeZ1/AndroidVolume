@@ -6,9 +6,13 @@ import android.content.Context
 import android.widget.Toast
 import com.fixbyte.floatingvolume.bloc.ServiceStatusBloc
 import com.fixbyte.floatingvolume.bloc.VisibilityBloc
+import com.fixbyte.floatingvolume.TechnicalMonitoring
 import com.fixbyte.floatingvolume.inIO
 import com.fixbyte.floatingvolume.inMain
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 
@@ -19,23 +23,40 @@ class NativeApiImpl(
 ) : NativeApi {
     override fun startService(callback: (Result<Unit>) -> Unit) {
         scope.inIO {
-            ServiceStatusBloc.event.emit(ServiceStatusBloc.Event.Start)
-            // Wait until the state is actually committed before signaling Flutter
-            ServiceStatusBloc.state
-                .filterIsInstance<ServiceStatusBloc.State.On>()
-                .first()
-            inMain { callback(Result.success(Unit)) }
+            val result = try {
+                // A rejected/failed promotion must not leave Flutter waiting forever.
+                withTimeout(12_000L) {
+                    ServiceStatusBloc.event.emit(ServiceStatusBloc.Event.Start)
+                    ServiceStatusBloc.state
+                        .filterIsInstance<ServiceStatusBloc.State.On>()
+                        .first()
+                }
+                Result.success(Unit)
+            } catch (e: Exception) {
+                if (e is CancellationException && e !is TimeoutCancellationException) throw e
+                Result.failure(e)
+            }
+            inMain { callback(result) }
         }
     }
 
     override fun stopService(callback: (Result<Unit>) -> Unit) {
         scope.inIO {
+            val result = try {
+            withTimeout(12_000L) {
             ServiceStatusBloc.event.emit(ServiceStatusBloc.Event.Stop)
             // Wait until the state is actually committed before signaling Flutter
             ServiceStatusBloc.state
                 .filterIsInstance<ServiceStatusBloc.State.Off>()
                 .first()
-            inMain { callback(Result.success(Unit)) }
+            }
+            Result.success(Unit)
+            } catch (e: Exception) {
+                if (e is CancellationException && e !is TimeoutCancellationException) throw e
+                TechnicalMonitoring.error("channel_stop_failed", e)
+                Result.failure(e)
+            }
+            inMain { callback(result) }
         }
     }
 

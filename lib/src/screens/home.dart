@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:floating_volume/src/app_language.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -9,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:floating_volume/src/services/ad_service.dart';
 import 'package:floating_volume/src/widget_settings.dart';
 import 'package:floating_volume/src/screens/privacy_policy_screen.dart';
+import 'package:floating_volume/src/screens/report_screen.dart';
 import 'package:floating_volume/src/widgets/adaptive_banner.dart';
 
 import 'package:floating_volume/src/bloc/status/bloc.dart' as bstatus;
@@ -106,14 +108,19 @@ class _PermissionsView extends StatelessWidget {
         title: const Text('Floating Volume'),
         centerTitle: false,
         scrolledUnderElevation: 0,
-        actions: const [_ThemeQuickAction(), Gap(12)],
+        actions: const [
+          ReportQuickAction(),
+          _LanguageQuickAction(),
+          _ThemeQuickAction(),
+          Gap(8),
+        ],
       ),
       body: BlocBuilder<bpermissions.Bloc, spermissions.State>(
         builder: (context, state) {
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             children: [
-              _SectionLabel('Permisos (requeridos)'),
+              _SectionLabel(tr('Required permissions', 'Permisos requeridos')),
               const Gap(10),
               Card(
                 elevation: 0,
@@ -124,10 +131,16 @@ class _PermissionsView extends StatelessWidget {
                 child: Column(
                   children: [
                     _PermissionRow(
-                      title: 'Capa sobrepuesta',
-                      subtitle:
-                          'Para renderizar los botones de volumen sobre otras aplicaciones.',
+                      title: tr(
+                        'Display over other apps',
+                        'Mostrar sobre otras apps',
+                      ),
+                      subtitle: tr(
+                        'Shows the volume buttons over other apps.',
+                        'Muestra los botones de volumen sobre otras aplicaciones.',
+                      ),
                       isGranted: state.overlayPermission.status.isGranted,
+                      operation: state.overlayPermission.operation,
                       onTap:
                           () => context.read<bpermissions.Bloc>().add(
                             epermissions.Event.requestOverlayPermission,
@@ -140,11 +153,17 @@ class _PermissionsView extends StatelessWidget {
                       color: cs.outlineVariant,
                     ),
                     _PermissionRow(
-                      title: 'Ejecutar en segundo plano',
-                      subtitle:
-                          'Para seguir mostrando los botones de volumen en la pantalla.',
+                      title: tr(
+                        'Run in the background',
+                        'Ejecutar en segundo plano',
+                      ),
+                      subtitle: tr(
+                        'Keeps the volume buttons visible on screen.',
+                        'Mantiene los botones de volumen visibles en la pantalla.',
+                      ),
                       isGranted:
                           state.batteryOptimizationPermission.status.isGranted,
+                      operation: state.batteryOptimizationPermission.operation,
                       onTap:
                           () => context.read<bpermissions.Bloc>().add(
                             epermissions
@@ -156,7 +175,7 @@ class _PermissionsView extends StatelessWidget {
                 ),
               ),
               const Gap(20),
-              _SectionLabel('Permisos (opcional)'),
+              _SectionLabel(tr('Optional permissions', 'Permisos opcionales')),
               const Gap(10),
               Card(
                 elevation: 0,
@@ -165,10 +184,16 @@ class _PermissionsView extends StatelessWidget {
                   side: BorderSide(color: cs.outlineVariant),
                 ),
                 child: _PermissionRow(
-                  title: 'Permiso de notificación',
-                  subtitle:
-                      'Para alternar los botones de volumen desde la notificación.',
+                  title: tr(
+                    'Notification permission',
+                    'Permiso de notificaciones',
+                  ),
+                  subtitle: tr(
+                    'Lets you toggle the volume buttons from the notification.',
+                    'Permite activar o desactivar los botones desde la notificación.',
+                  ),
                   isGranted: state.notificationPermission.status.isGranted,
+                  operation: state.notificationPermission.operation,
                   onTap:
                       () => context.read<bpermissions.Bloc>().add(
                         epermissions.Event.requestNotificationPermission,
@@ -202,28 +227,73 @@ class _PermissionRow extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool isGranted;
+  final spermissions.PermissionOperation operation;
   final VoidCallback onTap;
 
   const _PermissionRow({
     required this.title,
     required this.subtitle,
     required this.isGranted,
+    required this.operation,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final busy = context.read<bpermissions.Bloc>().state.isRequesting;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-      subtitle: Text(subtitle),
+      subtitle: Text(
+        operation == spermissions.PermissionOperation.failed
+            ? tr(
+              'Could not open the permission request. Tap to retry.',
+              'No se pudo abrir la solicitud. Toca para reintentar.',
+            )
+            : subtitle,
+      ),
       trailing:
-          isGranted
+          operation == spermissions.PermissionOperation.requestingPermission
+              ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+              : isGranted
               ? Icon(Icons.check_circle_rounded, color: Colors.green.shade600)
               : const Icon(Icons.chevron_right_rounded),
-      onTap: isGranted ? null : onTap,
+      onTap: isGranted || busy ? null : onTap,
     );
   }
+}
+
+class _LanguageQuickAction extends StatelessWidget {
+  const _LanguageQuickAction();
+
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<AppLanguage>(
+    tooltip: tr('Language', 'Idioma'),
+    icon: const Icon(Icons.language_rounded),
+    onSelected: LanguageSettings.set,
+    itemBuilder:
+        (context) => [
+          CheckedPopupMenuItem(
+            value: AppLanguage.system,
+            checked: LanguageSettings.selection.value == AppLanguage.system,
+            child: Text(tr('System default', 'Predeterminado del sistema')),
+          ),
+          CheckedPopupMenuItem(
+            value: AppLanguage.english,
+            checked: LanguageSettings.selection.value == AppLanguage.english,
+            child: const Text('English'),
+          ),
+          CheckedPopupMenuItem(
+            value: AppLanguage.spanish,
+            checked: LanguageSettings.selection.value == AppLanguage.spanish,
+            child: const Text('Español'),
+          ),
+        ],
+  );
 }
 
 class _ThemeQuickAction extends StatelessWidget {
@@ -245,7 +315,7 @@ class _ThemeQuickAction extends StatelessWidget {
         };
         return Semantics(
           button: true,
-          label: 'Cambiar tema',
+          label: tr('Change theme', 'Cambiar tema'),
           child: InkWell(
             borderRadius: BorderRadius.circular(18),
             onTap: () => context.read<btheme.Bloc>().add(etheme.Change(next)),
@@ -287,19 +357,27 @@ class _MainView extends StatefulWidget {
   State<_MainView> createState() => _MainViewState();
 }
 
-class _MainViewState extends State<_MainView> {
+class _MainViewState extends State<_MainView> with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
   WidgetStyle _selectedStyle = WidgetStyle.android;
   bool _styleLoaded = false;
+  bool _settingsLoading = false;
+  bool _settingsLoadError = false;
   bool _isPinned = false;
   bool _useSystemVolume = false;
+  bool _autoPeekEnabled = true;
   Map<WidgetStyle, String?> _specialTimeLeft = const {};
+  WidgetStyle? _featuredStyle;
+  String? _featuredTimeLeft;
+  String? _featuredCompactTimeLeft;
   bool _privacyOptionsRequired = false;
   Timer? _unlockRefreshTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetSettings.changes.addListener(_nativeSettingsChanged);
     _loadSettings();
     _unlockRefreshTimer = Timer.periodic(
       const Duration(minutes: 1),
@@ -307,129 +385,144 @@ class _MainViewState extends State<_MainView> {
     );
   }
 
-  Future<Map<WidgetStyle, String?>> _readSpecialUnlocks() async {
+  Future<
+    ({
+      Map<WidgetStyle, String?> unlocks,
+      WidgetStyle featured,
+      String timeLeft,
+      String compactTimeLeft,
+    })
+  >
+  _readSpecialUnlocks() async {
     final result = <WidgetStyle, String?>{};
-    for (final style in WidgetStyle.values.skip(5)) {
+    final specialStyles = WidgetStyle.values.skip(5).toList();
+    final featured = await AdService.getFeaturedSpecialStyle(
+      specialStyles.map((style) => style.name).toList(),
+    );
+    final featuredStyle = specialStyles.firstWhere(
+      (style) => style.name == featured.styleKey,
+    );
+    for (final style in specialStyles) {
       result[style] = await AdService.timeLeftLabel(style.name);
     }
-    return result;
+    final featuredAccessExpiry =
+        await AdService.unlockExpiry(featuredStyle.name) ?? featured.expiresAt;
+    final featuredRemaining = featuredAccessExpiry.difference(DateTime.now());
+    final featuredTimeLeft = AdService.formatTimeLeft(featuredRemaining);
+    final featuredCompactTimeLeft = AdService.formatCompactTimeLeft(
+      featuredRemaining,
+    );
+    result[featuredStyle] = featuredTimeLeft;
+    return (
+      unlocks: result,
+      featured: featuredStyle,
+      timeLeft: featuredTimeLeft,
+      compactTimeLeft: featuredCompactTimeLeft,
+    );
   }
 
   Future<void> _refreshSpecialUnlocks() async {
-    final result = await _readSpecialUnlocks();
+    final snapshot = await _readSpecialUnlocks();
     if (!mounted) return;
     final selectedExpired =
         WidgetStyle.values.indexOf(_selectedStyle) >= 5 &&
-        result[_selectedStyle] == null;
+        snapshot.unlocks[_selectedStyle] == null;
     setState(() {
-      _specialTimeLeft = result;
-      if (selectedExpired) _selectedStyle = WidgetStyle.android;
+      _specialTimeLeft = snapshot.unlocks;
+      _featuredStyle = snapshot.featured;
+      _featuredTimeLeft = snapshot.timeLeft;
+      _featuredCompactTimeLeft = snapshot.compactTimeLeft;
     });
     if (selectedExpired) await _selectStyle(WidgetStyle.android);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    WidgetSettings.changes.removeListener(_nativeSettingsChanged);
     _unlockRefreshTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadSettings() async {
-    if (_styleLoaded) return; // guard against re-entry
-    final prefs = await SharedPreferences.getInstance();
-    final name = prefs.getString('widget_style');
-    var style =
-        WidgetStyle.values.where((s) => s.name == name).firstOrNull ??
-        WidgetStyle.android;
-    final pinned = prefs.getBool('widget_pinned') ?? false;
-    final sysVol = prefs.getBool('widget_use_sys_vol') ?? false;
-    final crtSpeed = prefs.getDouble('widget_crt_speed') ?? 1.0;
-    final crtGlow = prefs.getDouble('widget_crt_glow') ?? 1.0;
-    final streamName = prefs.getString('widget_audio_stream') ?? 'MEDIA';
-    final stream = switch (streamName) {
-      'RING' => AudioStream.ring,
-      'NOTIFICATION' => AudioStream.notification,
-      'ALARM' => AudioStream.alarm,
-      'SYSTEM' => AudioStream.system,
-      'VOICE_CALL' => AudioStream.voiceCall,
-      _ => AudioStream.media,
-    };
-    final showMixer = prefs.getBool('widget_show_mixer') ?? true;
-    final autoPeek = prefs.getBool('widget_auto_peek') ?? true;
-    final storedPeekDelay = prefs.getInt('widget_peek_delay') ?? 1800;
-    final peekDelay =
-        (storedPeekDelay == 4000 || storedPeekDelay == 5000)
-            ? 1800
-            : storedPeekDelay;
-    final peekSize = prefs.getInt('widget_peek_size') ?? 16;
-    final specialTimeLeft = await _readSpecialUnlocks();
-    if (WidgetStyle.values.indexOf(style) >= 5 &&
-        specialTimeLeft[style] == null) {
-      style = WidgetStyle.android;
-      await prefs.setString('widget_style', style.name);
+  void _nativeSettingsChanged() {
+    if (!mounted) return;
+    setState(() {
+      _selectedStyle = WidgetSettings.style;
+      _isPinned = WidgetSettings.isPinned;
+      _useSystemVolume = WidgetSettings.useSystemVolume;
+      _autoPeekEnabled = WidgetSettings.autoPeekEnabled;
+    });
+    final error = WidgetSettings.lastError.value;
+    if (_styleLoaded && error != null) {
+      WidgetSettings.lastError.value = null;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
     }
-    final privacyOptionsRequired = await AdService.privacyOptionsRequired();
-    if (mounted && !_styleLoaded) {
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_styleLoaded) {
+        unawaited(WidgetSettings.load());
+      } else {
+        unawaited(_loadSettings());
+      }
+    }
+  }
+
+  Future<void> _loadSettings() async {
+    if (_settingsLoading) return;
+    _settingsLoading = true;
+    try {
+      final loaded = await WidgetSettings.initialize();
+      if (!mounted) return;
+      if (!loaded) {
+        setState(() => _settingsLoadError = true);
+        return;
+      }
+      final specialSnapshot = await _readSpecialUnlocks();
+      if (WidgetStyle.values.indexOf(WidgetSettings.style) >= 5 &&
+          specialSnapshot.unlocks[WidgetSettings.style] == null) {
+        await WidgetSettings.setWidgetStyle(WidgetStyle.android);
+      }
+      if (!mounted) return;
       setState(() {
-        _selectedStyle = style;
-        _isPinned = pinned;
-        _useSystemVolume = sysVol;
-        _specialTimeLeft = specialTimeLeft;
-        _privacyOptionsRequired = privacyOptionsRequired;
+        _selectedStyle = WidgetSettings.style;
+        _isPinned = WidgetSettings.isPinned;
+        _useSystemVolume = WidgetSettings.useSystemVolume;
+        _autoPeekEnabled = WidgetSettings.autoPeekEnabled;
+        _specialTimeLeft = specialSnapshot.unlocks;
+        _featuredStyle = specialSnapshot.featured;
+        _featuredTimeLeft = specialSnapshot.timeLeft;
+        _featuredCompactTimeLeft = specialSnapshot.compactTimeLeft;
+        _settingsLoadError = false;
         _styleLoaded = true;
       });
-      try {
-        await WidgetSettings.setWidgetStyle(style);
-      } catch (_) {}
-      try {
-        await WidgetSettings.setPinned(pinned);
-      } catch (_) {}
-      try {
-        await WidgetSettings.setUseSystemVolume(sysVol);
-      } catch (_) {}
-      try {
-        await WidgetSettings.setAudioStream(stream);
-        await WidgetSettings.setShowAudioMixer(showMixer);
-        await WidgetSettings.setAutoPeekEnabled(autoPeek);
-        await WidgetSettings.setAutoPeekDelay(peekDelay);
-        await WidgetSettings.setPeekSize(peekSize);
-      } catch (_) {}
-      try {
-        await WidgetSettings.setCreativeAnimSpeed(crtSpeed);
-      } catch (_) {}
-      try {
-        await WidgetSettings.setCreativeGlowIntensity(crtGlow);
-      } catch (_) {}
+      final privacyOptionsRequired = await AdService.privacyOptionsRequired();
+      if (mounted) {
+        setState(() => _privacyOptionsRequired = privacyOptionsRequired);
+      }
+    } catch (_) {
+      if (mounted && !_styleLoaded) {
+        setState(() => _settingsLoadError = true);
+      }
+    } finally {
+      _settingsLoading = false;
     }
   }
 
-  Future<void> _selectStyle(WidgetStyle style) async {
-    setState(() => _selectedStyle = style);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('widget_style', style.name);
-    try {
-      await WidgetSettings.setWidgetStyle(style);
-    } catch (_) {}
-  }
+  Future<void> _selectStyle(WidgetStyle style) =>
+      WidgetSettings.setWidgetStyle(style);
+  Future<void> _togglePin(bool value) => WidgetSettings.setPinned(value);
+  Future<void> _toggleSysVol(bool value) =>
+      WidgetSettings.setUseSystemVolume(value);
+  Future<void> _toggleAutoPeek(bool value) =>
+      WidgetSettings.setAutoPeekEnabled(value);
 
-  Future<void> _togglePin(bool value) async {
-    setState(() => _isPinned = value);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('widget_pinned', value);
-    try {
-      await WidgetSettings.setPinned(value);
-    } catch (_) {}
-  }
-
-  Future<void> _toggleSysVol(bool value) async {
-    setState(() => _useSystemVolume = value);
-    try {
-      await WidgetSettings.setUseSystemVolume(value);
-    } catch (_) {}
-  }
-
-  void _showUnlockSheet(WidgetStyle style) {
+  void _showUnlockSheet(WidgetStyle style, {bool isExtension = false}) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -439,14 +532,10 @@ class _MainViewState extends State<_MainView> {
       builder:
           (_) => _UnlockSheet(
             style: style,
+            isExtension: isExtension,
             onUnlocked: () async {
-              final timeLeft = await AdService.timeLeftLabel(style.name);
-              if (mounted) {
-                setState(() {
-                  _specialTimeLeft = {..._specialTimeLeft, style: timeLeft};
-                });
-                _selectStyle(style);
-              }
+              await _refreshSpecialUnlocks();
+              if (!isExtension && mounted) await _selectStyle(style);
             },
           ),
     );
@@ -461,216 +550,347 @@ class _MainViewState extends State<_MainView> {
         title: const Text('Floating Volume'),
         centerTitle: false,
         scrolledUnderElevation: 0,
-        actions: const [_ThemeQuickAction(), Gap(12)],
-      ),
-      bottomNavigationBar: const AdaptiveBanner(),
-      body: ListView(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-        children: [
-          BlocBuilder<bstatus.Bloc, sstatus.State>(
-            builder:
-                (context, state) => _ControlHub(
-                  enabled: state.isEnabled,
-                  loading: state.operation != sstatus.Operation.none,
-                  pinned: _isPinned,
-                  useSystemIndicator: _useSystemVolume,
-                  onToggle:
-                      () => context.read<bstatus.Bloc>().add(
-                        estatus.Event.toggle,
-                      ),
-                  onPinnedChanged: _togglePin,
-                  onSystemIndicatorChanged: _toggleSysVol,
-                ),
-          ),
-          const Gap(28),
-          const _SectionHeader(
-            eyebrow: 'PERSONALIZACIÓN',
-            title: 'Elige una presencia',
-            subtitle: 'La apariencia que verás sobre cualquier app.',
-          ),
-          const Gap(14),
-          _SectionHeader.compact('Sistemas clásicos'),
-          const Gap(12),
-          SizedBox(
-            height: 202,
-            child:
-                _styleLoaded
-                    ? ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: 5, // classic styles
-                      separatorBuilder: (_, __) => const Gap(12),
-                      itemBuilder: (context, index) {
-                        final style = WidgetStyle.values[index];
-                        return _StyleCard(
-                          label: style.label,
-                          selected: _selectedStyle == style,
-                          preview: style.preview,
-                          onTap: () => _selectStyle(style),
-                        );
-                      },
-                    )
-                    : const Center(child: CircularProgressIndicator()),
-          ),
-
-          const Gap(24),
-
-          _SectionHeader.compact('Estilos especiales'),
-          const Gap(12),
-          SizedBox(
-            height: 190,
-            child:
-                _styleLoaded
-                    ? ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount:
-                          WidgetStyle.values.length - 5, // estilos especiales
-                      separatorBuilder: (_, __) => const Gap(12),
-                      itemBuilder: (context, index) {
-                        final style = WidgetStyle.values[5 + index];
-                        final timeLeft = _specialTimeLeft[style];
-                        final locked = timeLeft == null;
-                        return _StyleCard(
-                          label: style.label,
-                          selected: _selectedStyle == style,
-                          locked: locked,
-                          unlockLabel: timeLeft,
-                          preview: style.preview,
-                          onTap:
-                              () =>
-                                  locked
-                                      ? _showUnlockSheet(style)
-                                      : _selectStyle(style),
-                        );
-                      },
-                    )
-                    : const Center(child: CircularProgressIndicator()),
-          ),
-
-          const Gap(28),
-          const _SectionHeader(
-            eyebrow: 'CONTROL FINO',
-            title: 'Ajustes avanzados',
-            subtitle: 'Abre solo lo que quieras ajustar.',
-          ),
-          const Gap(12),
-          _FloatingButtonsSettingsCard(onChanged: () => setState(() {})),
-          const Gap(12),
-          _AudioControlSettingsCard(onChanged: () => setState(() {})),
-          const Gap(12),
-          _VolumeIndicatorSettingsCard(onChanged: () => setState(() {})),
-          const Gap(12),
-          _CreativeSettingsCard(onChanged: () => setState(() {})),
-          const Gap(16),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.restart_alt_rounded),
-            label: const Text('Restaurar valores de fábrica'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 52),
-            ),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('¿Restaurar valores de fábrica?'),
-                      content: const Text(
-                        'Se restaurarán todos los ajustes de la aplicación. Puedes restaurar una sola categoría desde cada sección avanzada.',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancelar'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Aceptar'),
-                        ),
-                      ],
-                    ),
-              );
-
-              if (confirm == true) {
-                await WidgetSettings.restoreDefaultsForStyle(
-                  WidgetSettings.style,
-                );
-                setState(() {});
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Valores de fábrica restablecidos.'),
-                    ),
-                  );
-                }
-              }
-            },
-          ),
-
-          const Gap(24),
-
-          const Gap(12),
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.outlineVariant,
-              ),
-            ),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.privacy_tip_outlined),
-                  title: const Text('Política de privacidad'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const PrivacyPolicyScreen(),
-                        ),
-                      ),
-                ),
-                if (_privacyOptionsRequired) ...[
-                  Divider(
-                    height: 1,
-                    indent: 16,
-                    endIndent: 16,
-                    color: cs.outlineVariant,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.privacy_tip_outlined),
-                    title: const Text('Opciones de privacidad de anuncios'),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () async {
-                      final error = await AdService.showPrivacyOptions();
-                      if (error != null && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'No se pudieron abrir las opciones de privacidad.',
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          const Gap(16),
-
-          // ── OEM compatibility banner ──────────────────────────────────────
-          const _OemCompatBanner(),
-
-          const Gap(32),
+        actions: const [
+          ReportQuickAction(),
+          _LanguageQuickAction(),
+          _ThemeQuickAction(),
+          Gap(8),
         ],
       ),
+      bottomNavigationBar: const AdaptiveBanner(),
+      body:
+          !_styleLoaded
+              ? Center(
+                child:
+                    _settingsLoadError
+                        ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              tr(
+                                'Could not load settings.',
+                                'No se pudieron cargar los ajustes.',
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _loadSettings,
+                              child: Text(tr('Retry', 'Reintentar')),
+                            ),
+                          ],
+                        )
+                        : const CircularProgressIndicator(),
+              )
+              : ListView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+                children: [
+                  BlocConsumer<bstatus.Bloc, sstatus.State>(
+                    listenWhen:
+                        (previous, current) =>
+                            previous.operation != current.operation &&
+                            current.operation == sstatus.Operation.failed,
+                    listener: (context, state) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            tr(
+                              'Could not change the floating controls. Please try again.',
+                              'No se pudo cambiar el estado de los controles. Inténtalo de nuevo.',
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    builder:
+                        (context, state) => _ControlHub(
+                          enabled: state.isEnabled,
+                          loading:
+                              state.operation == sstatus.Operation.enabling ||
+                              state.operation == sstatus.Operation.disabling,
+                          pinned: _isPinned,
+                          useSystemIndicator: _useSystemVolume,
+                          autoPeekEnabled: _autoPeekEnabled,
+                          onToggle:
+                              () => context.read<bstatus.Bloc>().add(
+                                estatus.Event.toggle,
+                              ),
+                          onPinnedChanged: _togglePin,
+                          onSystemIndicatorChanged: _toggleSysVol,
+                          onAutoPeekChanged: _toggleAutoPeek,
+                        ),
+                  ),
+                  const Gap(28),
+                  _SectionHeader(
+                    eyebrow: tr('PERSONALIZATION', 'PERSONALIZACIÓN'),
+                    title: tr('Choose a look', 'Elige una apariencia'),
+                    subtitle: tr(
+                      'How the controls appear over other apps.',
+                      'La apariencia de los controles sobre otras apps.',
+                    ),
+                  ),
+                  const Gap(14),
+                  _SectionHeader.compact(
+                    tr('Classic systems', 'Sistemas clásicos'),
+                  ),
+                  const Gap(12),
+                  SizedBox(
+                    height: 202,
+                    child:
+                        _styleLoaded
+                            ? ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: 5, // classic styles
+                              separatorBuilder: (_, __) => const Gap(12),
+                              itemBuilder: (context, index) {
+                                final style = WidgetStyle.values[index];
+                                return _StyleCard(
+                                  label: style.label,
+                                  selected: _selectedStyle == style,
+                                  preview: style.preview,
+                                  onTap: () => _selectStyle(style),
+                                );
+                              },
+                            )
+                            : const Center(child: CircularProgressIndicator()),
+                  ),
+
+                  const Gap(24),
+
+                  _SectionHeader.compact(
+                    tr('Special styles', 'Estilos especiales'),
+                  ),
+                  const Gap(12),
+                  SizedBox(
+                    height: 190,
+                    child:
+                        _styleLoaded
+                            ? Builder(
+                              builder: (context) {
+                                final specialStyles =
+                                    WidgetStyle.values.skip(5).toList();
+                                final featuredStyle = _featuredStyle;
+                                final orderedStyles =
+                                    featuredStyle == null
+                                        ? specialStyles
+                                        : [
+                                          featuredStyle,
+                                          ...specialStyles.where(
+                                            (style) => style != featuredStyle,
+                                          ),
+                                        ];
+                                return ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: orderedStyles.length,
+                                  separatorBuilder: (_, __) => const Gap(12),
+                                  itemBuilder: (context, index) {
+                                    final style = orderedStyles[index];
+                                    final timeLeft =
+                                        style == featuredStyle
+                                            ? _featuredTimeLeft
+                                            : _specialTimeLeft[style];
+                                    final locked =
+                                        _specialTimeLeft[style] == null;
+                                    final isFeatured = style == featuredStyle;
+                                    return _StyleCard(
+                                      label: style.label,
+                                      selected: _selectedStyle == style,
+                                      locked: locked,
+                                      freeFeatured: isFeatured,
+                                      unlockLabel: timeLeft,
+                                      compactUnlockLabel:
+                                          isFeatured
+                                              ? _featuredCompactTimeLeft
+                                              : null,
+                                      preview: style.preview,
+                                      onExtend:
+                                          locked
+                                              ? null
+                                              : () => _showUnlockSheet(
+                                                style,
+                                                isExtension: true,
+                                              ),
+                                      onTap:
+                                          () =>
+                                              locked
+                                                  ? _showUnlockSheet(style)
+                                                  : _selectStyle(style),
+                                    );
+                                  },
+                                );
+                              },
+                            )
+                            : const Center(child: CircularProgressIndicator()),
+                  ),
+
+                  const Gap(28),
+                  _SectionHeader(
+                    eyebrow: tr('FINE CONTROL', 'CONTROL FINO'),
+                    title: tr('Advanced settings', 'Ajustes avanzados'),
+                    subtitle: tr(
+                      'Open only what you want to adjust.',
+                      'Abre solo lo que quieras ajustar.',
+                    ),
+                  ),
+                  const Gap(12),
+                  _FloatingButtonsSettingsCard(
+                    onChanged: () {
+                      setState(() {
+                        _autoPeekEnabled = WidgetSettings.autoPeekEnabled;
+                      });
+                    },
+                  ),
+                  const Gap(12),
+                  _AudioControlSettingsCard(onChanged: () => setState(() {})),
+                  const Gap(12),
+                  _VolumeIndicatorSettingsCard(
+                    onChanged: () => setState(() {}),
+                  ),
+                  const Gap(12),
+                  _CreativeSettingsCard(onChanged: () => setState(() {})),
+                  const Gap(16),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.restart_alt_rounded),
+                    label: Text(
+                      tr(
+                        'Restore factory defaults',
+                        'Restaurar valores de fábrica',
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 52),
+                    ),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder:
+                            (context) => AlertDialog(
+                              title: Text(
+                                tr(
+                                  'Restore factory defaults?',
+                                  '¿Restaurar valores de fábrica?',
+                                ),
+                              ),
+                              content: Text(
+                                tr(
+                                  'This will reset all app settings. You can reset just one category from its advanced section.',
+                                  'Se restaurarán todos los ajustes de la aplicación. También puedes restaurar cada sección por separado.',
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed:
+                                      () => Navigator.pop(context, false),
+                                  child: Text(tr('Cancel', 'Cancelar')),
+                                ),
+                                FilledButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: Text(tr('Confirm', 'Confirmar')),
+                                ),
+                              ],
+                            ),
+                      );
+
+                      if (!mounted || !context.mounted || confirm != true) {
+                        return;
+                      }
+                      final restored =
+                          await WidgetSettings.restoreDefaultsForStyle(
+                            WidgetSettings.style,
+                          );
+                      if (!mounted || !context.mounted || !restored) return;
+                      setState(() {
+                        _autoPeekEnabled = WidgetSettings.autoPeekEnabled;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            tr(
+                              'Factory defaults restored.',
+                              'Valores de fábrica restablecidos.',
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const Gap(24),
+
+                  const Gap(12),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.privacy_tip_outlined),
+                          title: Text(
+                            tr('Privacy policy', 'Política de privacidad'),
+                          ),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap:
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const PrivacyPolicyScreen(),
+                                ),
+                              ),
+                        ),
+                        if (_privacyOptionsRequired) ...[
+                          Divider(
+                            height: 1,
+                            indent: 16,
+                            endIndent: 16,
+                            color: cs.outlineVariant,
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.privacy_tip_outlined),
+                            title: Text(
+                              tr(
+                                'Ad privacy options',
+                                'Opciones de privacidad de anuncios',
+                              ),
+                            ),
+                            trailing: const Icon(Icons.chevron_right_rounded),
+                            onTap: () async {
+                              final error =
+                                  await AdService.showPrivacyOptions();
+                              if (error != null && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      tr(
+                                        'Could not open privacy options.',
+                                        'No se pudieron abrir las opciones de privacidad.',
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  const Gap(16),
+
+                  // ── OEM compatibility banner ──────────────────────────────────────
+                  const _OemCompatBanner(),
+
+                  const Gap(32),
+                ],
+              ),
     );
   }
 }
@@ -680,18 +900,22 @@ class _ControlHub extends StatelessWidget {
   final bool loading;
   final bool pinned;
   final bool useSystemIndicator;
+  final bool autoPeekEnabled;
   final VoidCallback onToggle;
   final ValueChanged<bool> onPinnedChanged;
   final ValueChanged<bool> onSystemIndicatorChanged;
+  final ValueChanged<bool> onAutoPeekChanged;
 
   const _ControlHub({
     required this.enabled,
     required this.loading,
     required this.pinned,
     required this.useSystemIndicator,
+    required this.autoPeekEnabled,
     required this.onToggle,
     required this.onPinnedChanged,
     required this.onSystemIndicatorChanged,
+    required this.onAutoPeekChanged,
   });
 
   @override
@@ -747,7 +971,9 @@ class _ControlHub extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        enabled ? 'Botón activo' : 'Botón inactivo',
+                        enabled
+                            ? tr('Controls active', 'Botones activos')
+                            : tr('Controls inactive', 'Botones inactivos'),
                         maxLines: 1,
                         style: Theme.of(
                           context,
@@ -759,8 +985,14 @@ class _ControlHub extends StatelessWidget {
                       const Gap(2),
                       Text(
                         enabled
-                            ? 'Disponible sobre otras aplicaciones'
-                            : 'Actívalo cuando lo necesites',
+                            ? tr(
+                              'Available over other apps',
+                              'Disponibles sobre otras aplicaciones',
+                            )
+                            : tr(
+                              'Turn them on when needed',
+                              'Actívalos cuando los necesites',
+                            ),
                         maxLines: 2,
                         style: TextStyle(
                           color:
@@ -776,7 +1008,7 @@ class _ControlHub extends StatelessWidget {
               Switch.adaptive(
                 value: enabled,
                 onChanged: loading ? null : (_) => onToggle(),
-                activeColor: Colors.white,
+                activeThumbColor: Colors.white,
                 activeTrackColor: Colors.white.withAlpha(80),
               ),
             ],
@@ -792,11 +1024,13 @@ class _ControlHub extends StatelessWidget {
               Expanded(
                 child: _HubToggle(
                   icon: Icons.push_pin_outlined,
-                  label: 'Fijar posición',
+                  label: tr('Lock position', 'Fijar posición'),
                   value: pinned,
                   inverted: enabled,
-                  helpText:
-                      'Evita que los botones flotantes cambien de lugar al arrastrarlos accidentalmente. Desactívalo cuando quieras moverlos.',
+                  helpText: tr(
+                    'Prevents accidental dragging of the floating buttons. Turn it off when you want to move them.',
+                    'Evita mover los botones por accidente. Desactívalo cuando quieras arrastrarlos.',
+                  ),
                   onChanged: onPinnedChanged,
                 ),
               ),
@@ -804,15 +1038,87 @@ class _ControlHub extends StatelessWidget {
               Expanded(
                 child: _HubToggle(
                   icon: Icons.phone_android_outlined,
-                  label: 'Indicador nativo',
+                  label: tr('System indicator', 'Indicador nativo'),
                   value: useSystemIndicator,
                   inverted: enabled,
-                  helpText:
-                      'Muestra el panel de volumen propio de Android. Para que no cubra los botones, estos se mueven al borde contrario mientras la opción está activa y regresan a su posición anterior al desactivarla.',
+                  helpText: tr(
+                    'Shows Android’s volume panel. The buttons move to the opposite edge to avoid overlap and return when this is turned off.',
+                    'Muestra el panel de volumen de Android. Los botones se mueven al borde contrario para evitar que se superpongan y regresan al desactivarlo.',
+                  ),
                   onChanged: onSystemIndicatorChanged,
                 ),
               ),
             ],
+          ),
+          const Gap(8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color:
+                  enabled
+                      ? Colors.white.withAlpha(22)
+                      : cs.surface.withAlpha(150),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: enabled ? Colors.white.withAlpha(55) : cs.outlineVariant,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.visibility_off_outlined,
+                  size: 20,
+                  color: enabled ? Colors.white : cs.onSurface,
+                ),
+                const Gap(10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        tr('Auto-hide', 'Ocultamiento automático'),
+                        style: TextStyle(
+                          color: enabled ? Colors.white : cs.onSurface,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Gap(2),
+                      Text(
+                        autoPeekEnabled
+                            ? tr(
+                              'Retracts when idle; tap the visible edge to reveal it.',
+                              'Se repliega tras la inactividad; toca el borde visible para abrirlo.',
+                            )
+                            : tr(
+                              'The + and − buttons stay visible.',
+                              'Los botones + y − permanecen visibles.',
+                            ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color:
+                              enabled
+                                  ? Colors.white.withAlpha(205)
+                                  : cs.onSurfaceVariant,
+                          fontSize: 11,
+                          height: 1.15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(8),
+                Switch.adaptive(
+                  value: autoPeekEnabled,
+                  onChanged: onAutoPeekChanged,
+                  activeTrackColor:
+                      enabled ? Colors.white.withAlpha(100) : null,
+                  activeThumbColor: enabled ? Colors.white : null,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -881,10 +1187,16 @@ class _HubToggle extends StatelessWidget {
                     ),
                   ),
                   Tooltip(
-                    message: 'Más información sobre $label',
+                    message: tr(
+                      'More information about $label',
+                      'Más información sobre $label',
+                    ),
                     child: Semantics(
                       button: true,
-                      label: 'Más información sobre $label',
+                      label: tr(
+                        'More information about $label',
+                        'Más información sobre $label',
+                      ),
                       child: SizedBox(
                         width: 25,
                         height: 25,
@@ -1003,7 +1315,10 @@ class _StyleCard extends StatelessWidget {
   final String label;
   final bool selected;
   final bool locked;
+  final bool freeFeatured;
   final String? unlockLabel;
+  final String? compactUnlockLabel;
+  final VoidCallback? onExtend;
   final Widget preview;
   final VoidCallback onTap;
 
@@ -1013,7 +1328,10 @@ class _StyleCard extends StatelessWidget {
     required this.preview,
     required this.onTap,
     this.locked = false,
+    this.freeFeatured = false,
     this.unlockLabel,
+    this.compactUnlockLabel,
+    this.onExtend,
   });
 
   @override
@@ -1025,10 +1343,12 @@ class _StyleCard extends StatelessWidget {
       selected: selected,
       label:
           '$label${locked
-              ? ', bloqueado'
+              ? tr(', locked', ', bloqueado')
+              : freeFeatured && unlockLabel != null
+              ? tr(', free; $unlockLabel remaining', ', gratis; quedan $unlockLabel')
               : unlockLabel != null
               ? ', $unlockLabel'
-              : ''}',
+              : ''}${onExtend != null ? tr(', add 3 days by watching an ad', ', añade 3 días viendo un anuncio') : ''}',
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
@@ -1110,7 +1430,7 @@ class _StyleCard extends StatelessWidget {
                       color: Colors.black.withAlpha(165),
                       borderRadius: BorderRadius.circular(21),
                     ),
-                    child: const Column(
+                    child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
@@ -1120,8 +1440,8 @@ class _StyleCard extends StatelessWidget {
                         ),
                         Gap(6),
                         Text(
-                          'Especial',
-                          style: TextStyle(
+                          tr('Special', 'Especial'),
+                          style: const TextStyle(
                             color: Color(0xFFFFD700),
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -1129,8 +1449,11 @@ class _StyleCard extends StatelessWidget {
                         ),
                         Gap(3),
                         Text(
-                          'Ver anuncio',
-                          style: TextStyle(color: Colors.white70, fontSize: 10),
+                          tr('Watch ad', 'Ver anuncio'),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 10,
+                          ),
                         ),
                       ],
                     ),
@@ -1140,37 +1463,56 @@ class _StyleCard extends StatelessWidget {
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD700).withAlpha(42),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onExtend,
                       borderRadius: BorderRadius.circular(9),
-                      border: Border.all(
-                        color: const Color(0xFFFFD700).withAlpha(120),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.schedule_rounded,
-                          size: 11,
-                          color: Color(0xFFFFC400),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
                         ),
-                        const Gap(3),
-                        Text(
-                          unlockLabel!,
-                          maxLines: 1,
-                          style: const TextStyle(
-                            color: Color(0xFFFFC400),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD700).withAlpha(42),
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(
+                            color: const Color(0xFFFFD700).withAlpha(120),
                           ),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              freeFeatured
+                                  ? Icons.redeem_rounded
+                                  : Icons.schedule_rounded,
+                              size: 11,
+                              color: const Color(0xFFFFC400),
+                            ),
+                            const Gap(3),
+                            Text(
+                              freeFeatured
+                                  ? (compactUnlockLabel ?? unlockLabel!)
+                                  : unlockLabel!,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                color: Color(0xFFFFC400),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (onExtend != null) ...[
+                              const Gap(3),
+                              const Icon(
+                                Icons.add_circle_outline_rounded,
+                                size: 12,
+                                color: Color(0xFFFFC400),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1187,9 +1529,14 @@ class _StyleCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _UnlockSheet extends StatefulWidget {
   final WidgetStyle style;
-  final VoidCallback onUnlocked;
+  final bool isExtension;
+  final Future<void> Function() onUnlocked;
 
-  const _UnlockSheet({required this.style, required this.onUnlocked});
+  const _UnlockSheet({
+    required this.style,
+    required this.onUnlocked,
+    this.isExtension = false,
+  });
 
   @override
   State<_UnlockSheet> createState() => _UnlockSheetState();
@@ -1230,7 +1577,10 @@ class _UnlockSheetState extends State<_UnlockSheet> {
           ),
           const Gap(12),
           Text(
-            'Estilo Especial: ${widget.style.label}',
+            tr(
+              'Special style: ${widget.style.label}',
+              'Estilo especial: ${widget.style.label}',
+            ),
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -1238,7 +1588,15 @@ class _UnlockSheetState extends State<_UnlockSheet> {
           ),
           const Gap(8),
           Text(
-            'Ve un breve anuncio para desbloquear ${widget.style.label}\ndurante 24 horas. Cada anuncio añade 24 horas.',
+            widget.isExtension
+                ? tr(
+                  'Watch an ad to add 72 hours to ${widget.style.label}. This time is added to your current access.',
+                  'Ve un anuncio para añadir 72 horas a ${widget.style.label}. Se suman al tiempo que ya tienes.',
+                )
+                : tr(
+                  'Watch an ad to unlock ${widget.style.label} for 3 days. Each ad adds 72 hours.',
+                  'Ve un anuncio para desbloquear ${widget.style.label} durante 3 días. Cada anuncio añade 72 horas.',
+                ),
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
@@ -1249,14 +1607,24 @@ class _UnlockSheetState extends State<_UnlockSheet> {
             const CircularProgressIndicator()
           else if (_failed)
             Text(
-              'Anuncio no disponible.\nIntenta de nuevo más tarde.',
+              tr(
+                'Ad unavailable.\nPlease try again later.',
+                'Anuncio no disponible.\nInténtalo de nuevo más tarde.',
+              ),
               style: TextStyle(color: cs.error),
               textAlign: TextAlign.center,
             )
           else
             FilledButton.icon(
               icon: const Icon(Icons.play_circle_outline_rounded),
-              label: const Text('Ver anuncio — desbloquear 24 horas'),
+              label: Text(
+                widget.isExtension
+                    ? tr('Watch ad — add 3 days', 'Ver anuncio — añadir 3 días')
+                    : tr(
+                      'Watch ad — unlock for 3 days',
+                      'Ver anuncio — desbloquear 3 días',
+                    ),
+              ),
               onPressed: _watchAd,
               style: FilledButton.styleFrom(
                 minimumSize: const Size(double.infinity, 48),
@@ -1267,7 +1635,7 @@ class _UnlockSheetState extends State<_UnlockSheet> {
           const Gap(12),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(tr('Cancel', 'Cancelar')),
           ),
         ],
       ),
@@ -1283,7 +1651,7 @@ class _UnlockSheetState extends State<_UnlockSheet> {
       styleKey: widget.style.name,
       onRewarded: () {
         if (mounted) Navigator.pop(context);
-        widget.onUnlocked();
+        unawaited(widget.onUnlocked());
       },
       onClosedWithoutReward: () {
         if (!mounted) return;
@@ -2042,7 +2410,7 @@ class _CosmicStarPainter extends CustomPainter {
               ? 1.0 - (phase - 0.20) / 0.15
               : 0.0;
       if (alpha <= 0) continue;
-      paint.color = _colors[i].withOpacity(alpha * 0.9);
+      paint.color = _colors[i].withValues(alpha: alpha * 0.9);
       final cx = _stars[i].dx * size.width;
       final cy = _stars[i].dy * size.height;
       canvas.drawCircle(Offset(cx, cy), 1.8, paint);
@@ -2620,9 +2988,7 @@ class _MiniIndicator extends StatelessWidget {
   final Color fill;
   final Color text;
   final Color? border;
-  final bool showVol;
   final String volLabel;
-  final double fillFraction;
 
   const _MiniIndicator({
     required this.card,
@@ -2630,9 +2996,7 @@ class _MiniIndicator extends StatelessWidget {
     required this.fill,
     required this.text,
     this.border,
-    this.showVol = true,
     this.volLabel = 'VOL',
-    this.fillFraction = 0.6,
   });
 
   @override
@@ -2667,7 +3031,7 @@ class _MiniIndicator extends StatelessWidget {
             ),
             alignment: Alignment.bottomCenter,
             child: FractionallySizedBox(
-              heightFactor: fillFraction,
+              heightFactor: 0.6,
               child: Container(
                 decoration: BoxDecoration(
                   color: fill,
@@ -2676,17 +3040,15 @@ class _MiniIndicator extends StatelessWidget {
               ),
             ),
           ),
-          if (showVol) ...[
-            const Gap(4),
-            Text(
-              volLabel,
-              style: TextStyle(
-                color: text.withAlpha(180),
-                fontSize: 7,
-                fontWeight: FontWeight.bold,
-              ),
+          const Gap(4),
+          Text(
+            volLabel,
+            style: TextStyle(
+              color: text.withAlpha(180),
+              fontSize: 7,
+              fontWeight: FontWeight.bold,
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -2701,14 +3063,9 @@ class _FloatingButtonsSettingsCard extends StatelessWidget {
   final VoidCallback onChanged;
   const _FloatingButtonsSettingsCard({required this.onChanged});
 
-  // Styles that use rectangular buttons (corner radius slider is relevant)
-  static const _rectStyles = {WidgetStyle.miui, WidgetStyle.samsungOneUi};
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final currentStyle = WidgetSettings.style;
-    final cornerApplies = _rectStyles.contains(currentStyle);
 
     return Card(
       elevation: 0,
@@ -2720,7 +3077,7 @@ class _FloatingButtonsSettingsCard extends StatelessWidget {
         initiallyExpanded: false,
         maintainState: true,
         leading: const Icon(Icons.smart_button_outlined),
-        title: const Text('Botones flotantes'),
+        title: Text(tr('Floating buttons', 'Botones flotantes')),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -2730,82 +3087,63 @@ class _FloatingButtonsSettingsCard extends StatelessWidget {
                 const Gap(4),
                 _buildSliderRow(
                   context,
+                  icon: Icons.rounded_corner_outlined,
+                  label: tr('Corner roundness', 'Redondeo de esquinas'),
+                  value: WidgetSettings.cornerSliderPosition(
+                    WidgetSettings.buttonCornerRadius,
+                  ),
+                  min: 0.0,
+                  max: 0.5,
+                  divisions: null,
+                  onChanged: (v) {
+                    WidgetSettings.setButtonCornerRadius(
+                      WidgetSettings.cornerSliderPosition(v),
+                    );
+                    onChanged();
+                  },
+                  formatStr:
+                      WidgetSettings.buttonCornerRadius < 0.025
+                          ? tr('Square', 'Cuadrado')
+                          : WidgetSettings.buttonCornerRadius >= 0.5
+                          ? tr('Round', 'Redondo')
+                          : '${(WidgetSettings.buttonCornerRadius * 200).round()}%',
+                ),
+                _buildSliderRow(
+                  context,
                   icon: Icons.aspect_ratio_outlined,
-                  label: 'Tamaño',
+                  label: tr('Size', 'Tamaño'),
                   value: WidgetSettings.buttonSize.toDouble(),
                   min: 36,
                   max: 72,
-                  divisions: 18,
+                  divisions: null,
                   onChanged: (v) {
                     WidgetSettings.setButtonSize(v.toInt());
                     onChanged();
                   },
-                  formatStr: '${WidgetSettings.buttonSize}px',
-                ),
-                // Corner radius slider — only meaningful for rect-based styles
-                Opacity(
-                  opacity: cornerApplies ? 1.0 : 0.4,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSliderRow(
-                        context,
-                        icon: Icons.rounded_corner_outlined,
-                        label: 'Redondeo (esquinas)',
-                        value: WidgetSettings.buttonCornerRadius,
-                        min: 0.0,
-                        max: 1.0,
-                        divisions: 10,
-                        onChanged:
-                            cornerApplies
-                                ? (v) {
-                                  WidgetSettings.setButtonCornerRadius(v);
-                                  onChanged();
-                                }
-                                : (_) {}, // no-op for circle-only styles
-                        formatStr:
-                            WidgetSettings.buttonCornerRadius < 0.15
-                                ? 'Cuadrado'
-                                : WidgetSettings.buttonCornerRadius > 0.85
-                                ? 'Redondo'
-                                : '${(WidgetSettings.buttonCornerRadius * 100).round()}%',
-                      ),
-                      if (!cornerApplies)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 28, bottom: 4),
-                          child: Text(
-                            'Solo aplica en estilos MIUI y One UI',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                  formatStr: '${WidgetSettings.buttonSize}dp',
                 ),
                 _buildSliderRow(
                   context,
                   icon: Icons.height_outlined,
-                  label: 'Separación',
+                  label: tr('Spacing', 'Separación'),
                   value: WidgetSettings.buttonGap.toDouble(),
                   min: 0,
                   max: 40,
-                  divisions: 20,
+                  divisions: null,
                   onChanged: (v) {
                     WidgetSettings.setButtonGap(v.toInt());
                     onChanged();
                   },
-                  formatStr: '${WidgetSettings.buttonGap}px',
+                  formatStr: '${WidgetSettings.buttonGap}dp',
                 ),
                 _buildSliderRow(
                   context,
                   icon: Icons.opacity_outlined,
-                  label: 'Opacidad',
+                  label: tr('Opacity', 'Opacidad'),
                   value: WidgetSettings.opacity,
                   min: 0.0,
                   max: 1.0,
-                  divisions: 20,
+                  divisions: null,
                   onChanged: (v) {
                     WidgetSettings.setOpacity(v);
                     onChanged();
@@ -2815,7 +3153,7 @@ class _FloatingButtonsSettingsCard extends StatelessWidget {
                 _buildSliderRow(
                   context,
                   icon: Icons.stairs_outlined,
-                  label: 'Paso de volumen por tap',
+                  label: tr('Volume step per tap', 'Paso de volumen por toque'),
                   value: WidgetSettings.volumeStep.toDouble(),
                   min: 1,
                   max: 5,
@@ -2825,17 +3163,84 @@ class _FloatingButtonsSettingsCard extends StatelessWidget {
                     onChanged();
                   },
                   formatStr:
-                      '${WidgetSettings.volumeStep} nivel${WidgetSettings.volumeStep > 1 ? 'es' : ''}',
+                      LanguageSettings.isSpanish
+                          ? '${WidgetSettings.volumeStep} nivel${WidgetSettings.volumeStep > 1 ? 'es' : ''}'
+                          : '${WidgetSettings.volumeStep} level${WidgetSettings.volumeStep > 1 ? 's' : ''}',
                 ),
                 _buildSwitchRow(
                   context,
                   icon: Icons.vibration_outlined,
-                  label: 'Vibrar al tocar',
+                  label: tr('Vibrate on touch', 'Vibrar al tocar'),
                   value: WidgetSettings.hapticFeedback,
                   onChanged: (v) {
                     WidgetSettings.setHapticFeedback(v);
                     onChanged();
                   },
+                ),
+                const Gap(16),
+                Text(
+                  tr(
+                    'Auto-hide settings',
+                    'Ajustes del ocultamiento automático',
+                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                Opacity(
+                  opacity: WidgetSettings.autoPeekEnabled ? 1 : 0.45,
+                  child: Column(
+                    children: [
+                      _buildSliderRow(
+                        context,
+                        icon: Icons.timer_outlined,
+                        label: tr('Hide after', 'Espera antes de ocultar'),
+                        value: WidgetSettings.autoPeekDelay.toDouble(),
+                        min: 1000,
+                        max: 30000,
+                        divisions: null,
+                        onChanged:
+                            WidgetSettings.autoPeekEnabled
+                                ? (value) {
+                                  WidgetSettings.setAutoPeekDelay(
+                                    value.toInt(),
+                                  );
+                                  onChanged();
+                                }
+                                : (_) {},
+                        formatStr: WidgetSettings.formatDelay(
+                          WidgetSettings.autoPeekDelay,
+                        ),
+                      ),
+                      _buildSliderRow(
+                        context,
+                        icon: Icons.unfold_less_rounded,
+                        label: tr(
+                          'Visible width at edge',
+                          'Ancho visible en el borde',
+                        ),
+                        value: WidgetSettings.peekSize.toDouble(),
+                        min: 16,
+                        max: 28,
+                        divisions: null,
+                        onChanged:
+                            WidgetSettings.autoPeekEnabled
+                                ? (value) {
+                                  WidgetSettings.setPeekSize(value.toInt());
+                                  onChanged();
+                                }
+                                : (_) {},
+                        formatStr: '${WidgetSettings.peekSize}dp',
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  tr(
+                    'Part of the buttons remains visible when hidden. Tap it to reveal them; the first tap does not change the volume.',
+                    'Al ocultarse, queda visible una parte de los botones. Tócala para desplegarlos; el primer toque no cambia el volumen.',
+                  ),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                 ),
                 _SectionRestoreButton(
                   onPressed: () async {
@@ -2869,7 +3274,7 @@ class _AudioControlSettingsCard extends StatelessWidget {
         initiallyExpanded: false,
         maintainState: true,
         leading: const Icon(Icons.tune_rounded),
-        title: const Text('Canales de audio'),
+        title: Text(tr('Audio channels', 'Canales de audio')),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -2878,16 +3283,20 @@ class _AudioControlSettingsCard extends StatelessWidget {
               children: [
                 const Gap(4),
                 Text(
-                  'Los botones y la barra compacta controlan el canal principal. El mezclador permite ajustar los demás.',
+                  tr(
+                    'The buttons and compact bar control the main channel. Use the mixer to adjust the others.',
+                    'Los botones y la barra compacta controlan el canal principal. El mezclador permite ajustar los demás.',
+                  ),
                   style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
                 ),
                 const Gap(12),
                 DropdownButtonFormField<AudioStream>(
-                  value: WidgetSettings.selectedAudioStream,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.tune_rounded),
-                    labelText: 'Canal principal',
-                    border: OutlineInputBorder(),
+                  key: ValueKey(WidgetSettings.selectedAudioStream),
+                  initialValue: WidgetSettings.selectedAudioStream,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.tune_rounded),
+                    labelText: tr('Main channel', 'Canal principal'),
+                    border: const OutlineInputBorder(),
                   ),
                   items:
                       AudioStream.values
@@ -2908,7 +3317,10 @@ class _AudioControlSettingsCard extends StatelessWidget {
                 _buildSwitchRow(
                   context,
                   icon: Icons.equalizer_rounded,
-                  label: 'Permitir mezclador multibarra',
+                  label: tr(
+                    'Enable multichannel mixer',
+                    'Permitir mezclador multibarra',
+                  ),
                   value: WidgetSettings.showAudioMixer,
                   onChanged: (value) {
                     WidgetSettings.setShowAudioMixer(value);
@@ -2917,71 +3329,10 @@ class _AudioControlSettingsCard extends StatelessWidget {
                 ),
                 const Gap(4),
                 Text(
-                  'Algunos fabricantes unen tono y notificaciones. Si ocurre, ambas barras se actualizarán juntas.',
-                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
-                ),
-                const Gap(16),
-                Text(
-                  'Ocultamiento al borde',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                _buildSwitchRow(
-                  context,
-                  icon: Icons.keyboard_double_arrow_right_rounded,
-                  label: 'Plegar cuando no se usa',
-                  value: WidgetSettings.autoPeekEnabled,
-                  onChanged: (value) {
-                    WidgetSettings.setAutoPeekEnabled(value);
-                    onChanged();
-                  },
-                ),
-                Opacity(
-                  opacity: WidgetSettings.autoPeekEnabled ? 1 : 0.45,
-                  child: Column(
-                    children: [
-                      _buildSliderRow(
-                        context,
-                        icon: Icons.timer_outlined,
-                        label: 'Espera para plegar',
-                        value: WidgetSettings.autoPeekDelay.toDouble(),
-                        min: 1000,
-                        max: 10000,
-                        divisions: 9,
-                        onChanged:
-                            WidgetSettings.autoPeekEnabled
-                                ? (value) {
-                                  WidgetSettings.setAutoPeekDelay(
-                                    value.toInt(),
-                                  );
-                                  onChanged();
-                                }
-                                : (_) {},
-                        formatStr: '${WidgetSettings.autoPeekDelay ~/ 1000}s',
-                      ),
-                      _buildSliderRow(
-                        context,
-                        icon: Icons.unfold_less_rounded,
-                        label: 'Pestaña visible',
-                        value: WidgetSettings.peekSize.toDouble(),
-                        min: 8,
-                        max: 24,
-                        divisions: 8,
-                        onChanged:
-                            WidgetSettings.autoPeekEnabled
-                                ? (value) {
-                                  WidgetSettings.setPeekSize(value.toInt());
-                                  onChanged();
-                                }
-                                : (_) {},
-                        formatStr: '${WidgetSettings.peekSize}px',
-                      ),
-                    ],
+                  tr(
+                    'Some devices link ringtone and notification volume. If so, both bars will move together.',
+                    'Algunos dispositivos unen el tono y las notificaciones. Si ocurre, ambas barras se moverán juntas.',
                   ),
-                ),
-                Text(
-                  'Toca la pestaña que queda en el borde para volver a desplegar el control.',
                   style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                 ),
                 _SectionRestoreButton(
@@ -3016,7 +3367,7 @@ class _VolumeIndicatorSettingsCard extends StatelessWidget {
         initiallyExpanded: false,
         maintainState: true,
         leading: const Icon(Icons.graphic_eq_rounded),
-        title: const Text('Barra de volumen'),
+        title: Text(tr('Volume indicator', 'Barra de volumen')),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -3027,67 +3378,69 @@ class _VolumeIndicatorSettingsCard extends StatelessWidget {
                 _buildSliderRow(
                   context,
                   icon: Icons.timer_outlined,
-                  label: 'Duración',
+                  label: tr('Duration', 'Duración'),
                   value: WidgetSettings.indicatorHideDelay.toDouble(),
                   min: 500,
                   max: 4000,
-                  divisions: 14,
+                  divisions: null,
                   onChanged: (v) {
                     WidgetSettings.setIndicatorHideDelay(v.toInt());
                     onChanged();
                   },
-                  formatStr: '${WidgetSettings.indicatorHideDelay / 1000}s',
+                  formatStr: WidgetSettings.formatDelay(
+                    WidgetSettings.indicatorHideDelay,
+                  ),
                 ),
                 _buildSliderRow(
                   context,
                   icon: Icons.straighten_outlined,
-                  label: 'Ancho',
+                  label: tr('Width', 'Ancho'),
                   value: WidgetSettings.indicatorWidth.toDouble(),
                   min: 24,
                   max: 100,
-                  divisions: 38,
+                  divisions: null,
                   onChanged: (v) {
                     WidgetSettings.setIndicatorWidth(v.toInt());
                     onChanged();
                   },
-                  formatStr: '${WidgetSettings.indicatorWidth}px',
+                  formatStr: '${WidgetSettings.indicatorWidth}dp',
                 ),
                 _buildSliderRow(
                   context,
                   icon: Icons.height_rounded,
-                  label: 'Alto',
+                  label: tr('Height', 'Alto'),
                   value: WidgetSettings.indicatorHeight.toDouble(),
                   min: 100,
                   max: 300,
-                  divisions: 40,
+                  divisions: null,
                   onChanged: (v) {
                     WidgetSettings.setIndicatorHeight(v.toInt());
                     onChanged();
                   },
-                  formatStr: '${WidgetSettings.indicatorHeight}px',
+                  formatStr: '${WidgetSettings.indicatorHeight}dp',
                 ),
                 _buildSliderRow(
                   context,
                   icon: Icons.space_bar_rounded,
-                  label: 'Distancia',
+                  label: tr('Distance', 'Distancia'),
                   value: WidgetSettings.indicatorGap.toDouble(),
                   min: 0,
                   max: 50,
-                  divisions: 5,
+                  divisions: null,
                   onChanged: (v) {
                     WidgetSettings.setIndicatorGap(v.toInt());
                     onChanged();
                   },
-                  formatStr: '${WidgetSettings.indicatorGap}px',
+                  formatStr: '${WidgetSettings.indicatorGap}dp',
                 ),
                 _buildSliderRow(
                   context,
                   icon: Icons.opacity_outlined,
-                  label: 'Opacidad',
+                  label: tr('Opacity', 'Opacidad'),
                   value: WidgetSettings.indicatorOpacity,
                   min: 0.2,
                   max: 1.0,
-                  divisions: 16,
+                  divisions: null,
                   onChanged: (v) {
                     WidgetSettings.setIndicatorOpacity(v);
                     onChanged();
@@ -3098,7 +3451,7 @@ class _VolumeIndicatorSettingsCard extends StatelessWidget {
                 _buildSwitchRow(
                   context,
                   icon: Icons.pin_outlined,
-                  label: 'Mostrar número de volumen',
+                  label: tr('Show volume level', 'Mostrar número de volumen'),
                   value: WidgetSettings.showIndicatorNumber,
                   onChanged: (v) {
                     WidgetSettings.setShowIndicatorNumber(v);
@@ -3108,7 +3461,7 @@ class _VolumeIndicatorSettingsCard extends StatelessWidget {
                 _buildSwitchRow(
                   context,
                   icon: Icons.volume_up_outlined,
-                  label: 'Mostrar etiqueta inferior',
+                  label: tr('Show bottom label', 'Mostrar etiqueta inferior'),
                   value: WidgetSettings.showIndicatorIcon,
                   onChanged: (v) {
                     WidgetSettings.setShowIndicatorIcon(v);
@@ -3147,7 +3500,7 @@ class _CreativeSettingsCard extends StatelessWidget {
         initiallyExpanded: false,
         maintainState: true,
         leading: const Icon(Icons.auto_awesome, color: Colors.purple),
-        title: const Text('Diseños creativos'),
+        title: Text(tr('Creative styles', 'Diseños creativos')),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -3156,18 +3509,21 @@ class _CreativeSettingsCard extends StatelessWidget {
               children: [
                 const Gap(4),
                 Text(
-                  'Ajustes exclusivos para temas como Cosmic, Lava o RGB.',
+                  tr(
+                    'Settings for themes such as Cosmic, Lava, and RGB.',
+                    'Ajustes para temas como Cosmic, Lava y RGB.',
+                  ),
                   style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
                 ),
                 const Gap(16),
                 _buildSliderRow(
                   context,
                   icon: Icons.speed_outlined,
-                  label: 'Velocidad de Animación',
+                  label: tr('Animation speed', 'Velocidad de animación'),
                   value: WidgetSettings.creativeAnimSpeed,
                   min: 0.5,
                   max: 2.0,
-                  divisions: 6,
+                  divisions: null,
                   onChanged: (v) {
                     WidgetSettings.setCreativeAnimSpeed(v);
                     onChanged();
@@ -3177,11 +3533,11 @@ class _CreativeSettingsCard extends StatelessWidget {
                 _buildSliderRow(
                   context,
                   icon: Icons.blur_on_outlined,
-                  label: 'Densidad del destello',
+                  label: tr('Glow intensity', 'Intensidad del destello'),
                   value: WidgetSettings.creativeGlowIntensity,
                   min: 0.2,
                   max: 3.0,
-                  divisions: 14,
+                  divisions: null,
                   onChanged: (v) {
                     WidgetSettings.setCreativeGlowIntensity(v);
                     onChanged();
@@ -3237,7 +3593,7 @@ class _SectionRestoreButton extends StatelessWidget {
     child: TextButton.icon(
       onPressed: onPressed,
       icon: const Icon(Icons.restart_alt_rounded, size: 18),
-      label: const Text('Restaurar esta sección'),
+      label: Text(tr('Reset this section', 'Restaurar esta sección')),
     ),
   );
 }
@@ -3249,7 +3605,7 @@ Widget _buildSliderRow(
   required double value,
   required double min,
   required double max,
-  required int divisions,
+  required int? divisions,
   required ValueChanged<double> onChanged,
   required String formatStr,
 }) {
@@ -3364,28 +3720,34 @@ class _OemCompatBannerState extends State<_OemCompatBanner> {
   }
 
   String get _title => switch (_oemType) {
-    _OemType.miui => '⚡ Paso extra requerido en MIUI',
-    _OemType.colorOs => '⚡ Paso extra requerido en ColorOS',
-    _OemType.oneUi => '⚡ Paso extra requerido en One UI',
+    _OemType.miui => tr(
+      '⚡ Extra step required on MIUI',
+      '⚡ Paso extra requerido en MIUI',
+    ),
+    _OemType.colorOs => tr(
+      '⚡ Extra step required on ColorOS',
+      '⚡ Paso extra requerido en ColorOS',
+    ),
+    _OemType.oneUi => tr(
+      '⚡ Extra step required on One UI',
+      '⚡ Paso extra requerido en One UI',
+    ),
     _OemType.other => '',
   };
 
   String get _instructions => switch (_oemType) {
-    _OemType.miui =>
-      'Para que los botones flotantes no desaparezcan:\n\n'
-          '1. Ve a Ajustes → Aplicaciones → Floating Volume\n'
-          '2. Toca "Inicio automático" y actívalo ✅\n'
-          '3. También ve a Batería → Ahorro de batería → Sin restricciones',
-    _OemType.colorOs =>
-      'Para evitar que el sistema detenga los botones flotantes:\n\n'
-          '1. Ve a Ajustes → Aplicaciones → Floating Volume\n'
-          '2. Toca "Inicio automático" y actívalo ✅\n'
-          '3. También en Batería → selecciona "Sin restricciones"',
-    _OemType.oneUi =>
-      'Para mantener los botones activos en segundo plano:\n\n'
-          '1. Ve a Ajustes → Aplicaciones → Floating Volume\n'
-          '2. En Batería → selecciona "Sin restricciones"\n'
-          '3. También desactiva "Batería Adaptable" si tienes problemas',
+    _OemType.miui => tr(
+      'To keep the floating buttons available:\n\n1. Go to Settings → Apps → Floating Volume\n2. Turn on "Autostart" ✅\n3. Set Battery → Battery saver to "No restrictions"',
+      'Para que los botones flotantes no desaparezcan:\n\n1. Ve a Ajustes → Aplicaciones → Floating Volume\n2. Activa "Inicio automático" ✅\n3. En Batería → Ahorro de batería elige "Sin restricciones"',
+    ),
+    _OemType.colorOs => tr(
+      'To prevent the system from stopping the floating buttons:\n\n1. Go to Settings → Apps → Floating Volume\n2. Turn on "Autostart" ✅\n3. Under Battery, select "Unrestricted"',
+      'Para evitar que el sistema detenga los botones flotantes:\n\n1. Ve a Ajustes → Aplicaciones → Floating Volume\n2. Activa "Inicio automático" ✅\n3. En Batería, selecciona "Sin restricciones"',
+    ),
+    _OemType.oneUi => tr(
+      'To keep the buttons active in the background:\n\n1. Go to Settings → Apps → Floating Volume\n2. Under Battery, select "Unrestricted"\n3. If needed, turn off "Adaptive battery"',
+      'Para mantener los botones activos en segundo plano:\n\n1. Ve a Ajustes → Aplicaciones → Floating Volume\n2. En Batería, selecciona "Sin restricciones"\n3. Si es necesario, desactiva "Batería adaptable"',
+    ),
     _OemType.other => '',
   };
 
@@ -3427,7 +3789,7 @@ class _OemCompatBannerState extends State<_OemCompatBanner> {
                   color: Color(0xFFBF360C),
                 ),
                 onPressed: _dismiss,
-                tooltip: 'No mostrar de nuevo',
+                tooltip: tr('Do not show again', 'No mostrar de nuevo'),
               ),
             ),
             Padding(

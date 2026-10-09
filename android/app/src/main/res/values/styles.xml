@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema aplicado mientras Flutter arranca — fondo azul del splash -->
+    <!-- Match the first Flutter frame while the engine starts. -->
     <style name="LaunchTheme" parent="@android:style/Theme.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
         <item name="android:windowFullscreen">false</item>

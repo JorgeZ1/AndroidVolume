@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Color base del splash screen — coincide con el gradiente del ícono -->
-    <color name="splash_blue">#1E6FBF</color>
+    <color name="splash_background">#EAF3FF</color>
+    <color name="splash_icon_backdrop">#D6E7FB</color>
 </resources>

@@ -33,7 +33,7 @@ class AudioMixerView(
         elevation = dp(12).toFloat()
 
         addView(TextView(context).apply {
-            text = "Mezclador"
+            text = NativeLanguage.text(context, "Volume mixer", "Mezclador de volumen")
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
             textSize = 14f
@@ -66,7 +66,7 @@ class AudioMixerView(
             setTextColor(Color.LTGRAY)
         }
         val slider = VerticalVolumeBarView(context).apply {
-            contentDescription = "Volumen ${stream.label}"
+            contentDescription = NativeLanguage.text(context, "${stream.label} volume", "Volumen de ${stream.localizedLabel(context)}")
             onUserLevelChanged = { level -> onVolumeChanged(stream, level) }
             onInteractionStarted = this@AudioMixerView.onInteractionStarted
             onInteractionFinished = this@AudioMixerView.onInteractionFinished
@@ -79,7 +79,7 @@ class AudioMixerView(
             setOnClickListener { onStreamSelected(stream) }
         }
         val name = TextView(context).apply {
-            text = stream.shortLabel
+            text = stream.localizedShortLabel(context)
             textSize = 7f
             gravity = Gravity.CENTER
             maxLines = 1

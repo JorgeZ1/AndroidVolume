@@ -132,7 +132,7 @@ class VolumeIndicatorView(context: Context) : LinearLayout(context) {
     /** Keeps the compact indicator honest about which stream it is controlling. */
     fun setStream(stream: AudioStream) {
         iconLabel.text = stream.symbol
-        contentDescription = "${stream.label}: ${numberLabel.text}"
+            contentDescription = "${stream.localizedLabel(context)}: ${numberLabel.text}"
     }
 
     /** Call whenever [WidgetSettings] changes (color mode, style, opacity). */

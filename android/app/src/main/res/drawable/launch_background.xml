@@ -1,13 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Splash screen — fondo azul del ícono con logo centrado -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Fondo azul sólido (color base del gradiente del ícono) -->
-    <item android:drawable="@color/splash_blue" />
-
-    <!-- Logo centrado -->
-    <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@mipmap/ic_launcher" />
-    </item>
+    <item android:drawable="@color/splash_background" />
+    <item android:drawable="@drawable/splash_logo" android:gravity="center" />
 </layer-list>

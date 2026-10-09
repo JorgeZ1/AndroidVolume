@@ -6,6 +6,9 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
+    id("com.google.firebase.firebase-perf")
 }
 
 val keystoreProperties = Properties()
@@ -39,6 +42,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         manifestPlaceholders["admobAppId"] = "ca-app-pub-2031775178741332~1518782522"
+        manifestPlaceholders["monitoringEnabled"] = "true"
     }
     signingConfigs {
         create("release") {
@@ -55,6 +59,7 @@ android {
         getByName("debug") {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            manifestPlaceholders["monitoringEnabled"] = "false"
             manifestPlaceholders["admobAppId"] = "ca-app-pub-3940256099942544~3347511713"
         }
         getByName("release") {
@@ -79,4 +84,13 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Match firebase_core's Android BoM. Native overlay diagnostics use these APIs.
+    implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
+    implementation("com.google.firebase:firebase-common")
+    implementation("com.google.firebase:firebase-crashlytics")
+    implementation("com.google.firebase:firebase-perf")
+    testImplementation("junit:junit:4.13.2")
 }

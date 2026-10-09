@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema splash en modo oscuro — mismo fondo azul para consistencia -->
+    <!-- Match the dark Flutter background while the engine starts. -->
     <style name="LaunchTheme" parent="@android:style/Theme.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
         <item name="android:windowFullscreen">false</item>

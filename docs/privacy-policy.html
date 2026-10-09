@@ -1,206 +1,117 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Política de Privacidad — Floating Volume</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Política de privacidad de Floating Volume, publicada por FixBit Solutions.">
+  <link rel="canonical" href="https://www.fixbitsolutions.com/privacy/floating-volume/">
+  <title>Política de privacidad de Floating Volume | FixBit Solutions</title>
   <style>
-    :root {
-      --primary: #2979FF;
-      --bg: #f8f9fa;
-      --card: #ffffff;
-      --text: #1a1a2e;
-      --muted: #6c757d;
-      --border: #e0e0e0;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.7;
-    }
-    header {
-      background: var(--primary);
-      color: #fff;
-      padding: 48px 24px 40px;
-      text-align: center;
-    }
-    header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
-    header p  { font-size: 1rem; opacity: .85; }
-    .badge {
-      display: inline-block;
-      margin-top: 16px;
-      background: rgba(255,255,255,.18);
-      border-radius: 20px;
-      padding: 4px 14px;
-      font-size: .85rem;
-    }
-    main {
-      max-width: 780px;
-      margin: 40px auto;
-      padding: 0 20px 60px;
-    }
-    section {
-      background: var(--card);
-      border-radius: 12px;
-      padding: 28px 28px 20px;
-      margin-bottom: 20px;
-      border: 1px solid var(--border);
-    }
-    h2 {
-      font-size: 1.05rem;
-      color: var(--primary);
-      font-weight: 700;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    h2 .icon { font-size: 1.1rem; }
-    p  { font-size: .95rem; color: #333; margin-bottom: 10px; }
-    ul { padding-left: 20px; margin-bottom: 10px; }
-    li { font-size: .95rem; color: #333; margin-bottom: 4px; }
-    a  { color: var(--primary); }
-    hr { border: none; border-top: 1px solid var(--border); margin: 16px 0 4px; }
-    footer {
-      text-align: center;
-      font-size: .82rem;
-      color: var(--muted);
-      padding-bottom: 40px;
-    }
+    :root{color-scheme:light dark;--bg:#f6f7f9;--card:#fff;--text:#18212b;--muted:#5d6875;--line:#dce2e8;--brand:#2563eb;--soft:#eaf1ff}
+    @media(prefers-color-scheme:dark){:root{--bg:#101419;--card:#181e25;--text:#eef3f8;--muted:#abb6c2;--line:#303944;--brand:#8ab4ff;--soft:#1d3152}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}
+    header,main,footer{width:min(860px,calc(100% - 32px));margin:auto}header{padding:52px 0 26px}h1{font-size:clamp(2rem,6vw,3.4rem);line-height:1.08;margin:.2rem 0 1rem}h2{font-size:1.25rem;margin:0 0 .75rem}h3{font-size:1.05rem;margin:1.3rem 0 .5rem}p,li{color:var(--muted)}strong{color:var(--text)}a{color:var(--brand)}.eyebrow{color:var(--brand);font-weight:750;letter-spacing:.08em;text-transform:uppercase}.meta,.languages{display:flex;gap:10px;flex-wrap:wrap}.chip{background:var(--soft);color:var(--brand);padding:6px 11px;border-radius:999px;font-size:.88rem}.languages{margin-top:20px}.languages a{font-weight:700}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:clamp(20px,4vw,34px);margin:0 0 18px}ul{padding-left:1.3rem}.notice{border-left:4px solid var(--brand)}hr{border:0;border-top:1px solid var(--line);margin:38px 0}footer{padding:20px 0 50px;font-size:.9rem}code{font-size:.9em}html{scroll-behavior:smooth}
   </style>
 </head>
 <body>
+  <header>
+    <div class="eyebrow">FixBit Solutions</div>
+    <h1>Política de privacidad de Floating Volume</h1>
+    <div class="meta"><span class="chip">Actualizada el 9 de octubre de 2026</span><span class="chip">Android</span></div>
+    <nav class="languages" aria-label="Idiomas"><a href="#es">Español</a><a href="#en" lang="en">English</a></nav>
+  </header>
 
-<header>
-  <h1>Floating Volume</h1>
-  <p>Política de Privacidad</p>
-  <span class="badge">Última actualización: 13 de septiembre de 2026</span>
-</header>
+  <main>
+    <article id="es" lang="es">
+      <section class="card notice">
+        <h2>Resumen</h2>
+        <p><strong>Floating Volume</strong> (<code>com.fixbyte.floatingvolume</code>) permite controlar el volumen mediante controles flotantes. Las preferencias se guardan en el dispositivo. La aplicación utiliza Google AdMob para publicidad, Supabase para reportes voluntarios y Google Firebase Crashlytics y Performance Monitoring para detectar fallas y mejorar el rendimiento. No requiere crear una cuenta.</p>
+      </section>
+      <section class="card">
+        <h2>1. Responsable y alcance</h2>
+        <p>Esta política describe el tratamiento de datos en Floating Volume, publicada por <strong>FixBit Solutions</strong>. Para consultas de privacidad escribe a <!--email_off--><a href="mailto:fixbyte3@gmail.com">fixbyte3@gmail.com</a><!--/email_off-->.</p>
+      </section>
+      <section class="card">
+        <h2>2. Información almacenada localmente</h2>
+        <p>La aplicación guarda en el dispositivo preferencias como el estilo, tamaño, opacidad, posición y comportamiento de los controles; ajustes de canales de audio; tema e idioma; y el vencimiento del acceso temporal a estilos especiales. No sincronizamos estas preferencias con una cuenta. Parte del contexto técnico, como el estilo y el estado del servicio, puede incluirse en el monitoreo descrito a continuación.</p>
+        <p>No solicitamos contactos, contraseñas, grabaciones, historial de llamadas ni contenido de mensajes. No accedemos a la ubicación GPS. Los proveedores pueden estimar una ubicación general mediante la dirección IP. Solo accedemos a las imágenes que eliges adjuntar voluntariamente a un reporte.</p>
+      </section>
+      <section class="card">
+        <h2>2a. Reportes voluntarios de soporte</h2>
+        <p>Al elegir enviar un reporte y aceptar el aviso, enviamos su categoría, descripción, versión de la aplicación y datos básicos del dispositivo (fabricante, modelo y versión de Android). Puedes adjuntar hasta dos imágenes JPG o PNG de hasta 2 MB cada una; las imágenes son opcionales y puedes usar la aplicación sin enviar reportes. No tomamos capturas automáticamente. Evita incluir datos personales o sensibles.</p>
+        <p>Los reportes y adjuntos se almacenan de forma privada en Supabase, en Estados Unidos, y solo el personal autorizado de soporte puede acceder para investigar problemas. No añadimos un ID de publicidad ni una cuenta de usuario al reporte. Supabase puede procesar direcciones IP y otros metadatos de conexión en sus registros de infraestructura. Consulta la <a href="https://supabase.com/privacy" rel="external">política de privacidad de Supabase</a>.</p>
+      </section>
+      <section class="card">
+        <h2>2b. Monitoreo técnico y rendimiento</h2>
+        <p>Las versiones de producción que incorporan Firebase Crashlytics y Performance Monitoring envían automáticamente registros de fallas, errores no fatales, seguimientos de pila, información de la aplicación y del dispositivo, identificadores de instalación y métricas de rendimiento y red. Usamos estos datos para identificar problemas por versión o dispositivo y mejorar la estabilidad.</p>
+        <p>El contexto técnico limitado puede incluir estilo, orientación, estado del servicio, permisos y categorías de error, ciclo de vida de la app, secuencias técnicas limitadas, estado de ventanas, eventos de arrastre o menús, solicitudes y resultados de volumen, y carga o resultado de anuncios. Medimos tiempos de inicio, solicitudes de permisos, operaciones del servicio, ajustes, volumen y envío de reportes. Los contadores de operación son temporales y no identifican al usuario. No enviamos intencionalmente el texto ni las imágenes de los reportes a Firebase, ni grabamos la pantalla, audio o contenido de otras aplicaciones.</p>
+        <p>Este monitoreo no dispone actualmente de un interruptor de desactivación dentro de la aplicación y es independiente del envío voluntario de reportes y de la personalización publicitaria. Google Analytics no está habilitado en la aplicación. Firebase puede procesar la IP para determinar el país y datos técnicos mediante sus proveedores. Consulta la <a href="https://firebase.google.com/support/privacy" rel="external">información de privacidad y conservación de Firebase</a>.</p>
+      </section>
+      <section class="card">
+        <h2>3. Publicidad y datos procesados por Google</h2>
+        <p>La pantalla principal muestra un banner de AdMob mientras la aplicación está abierta. En Estilos especiales, puedes elegir ver un anuncio recompensado para desbloquear únicamente el estilo seleccionado durante <strong>72 horas acumulables</strong>. Cada recompensa adicional añade 72 horas al mismo estilo y el acceso solo se concede cuando el SDK confirma la recompensa. También ofrecemos un estilo especial gratuito que rota cada 72 horas.</p>
+        <p>Según la documentación de Google, Google Mobile Ads SDK puede recopilar o compartir:</p>
+        <ul>
+          <li>dirección IP, usada para estimar una ubicación general;</li>
+          <li>interacciones, como aperturas, toques y visualizaciones de video;</li>
+          <li>diagnósticos, como tiempos de inicio, bloqueos, esperas y uso de energía;</li>
+          <li>identificadores del dispositivo o de publicidad, como el ID de publicidad y App Set ID.</li>
+        </ul>
+        <p>Google utiliza estos datos para publicidad, medición, análisis y prevención del fraude. Los datos enviados por el SDK se cifran en tránsito mediante TLS. Consulta la <a href="https://policies.google.com/privacy" rel="external">Política de Privacidad de Google</a> y <a href="https://policies.google.com/technologies/partner-sites" rel="external">cómo utiliza Google la información de apps asociadas</a>.</p>
+      </section>
+      <section class="card">
+        <h2>4. Consentimiento y opciones de anuncios</h2>
+        <p>Cuando las leyes o políticas aplicables lo requieren, la aplicación utiliza Google User Messaging Platform (UMP) para solicitar decisiones de privacidad antes de pedir anuncios. Según la elección y la región, Google puede mostrar anuncios personalizados, no personalizados, limitados o únicamente anuncios aptos para entrega técnica.</p>
+        <p>Cuando UMP indique que es obligatorio, la aplicación mostrará <strong>Opciones de privacidad de anuncios</strong> para revisar o retirar decisiones. También puedes eliminar o restablecer el ID de publicidad desde los controles de privacidad de Android. Rechazar la personalización no necesariamente elimina la publicidad.</p>
+      </section>
+      <section class="card">
+        <h2>5. Permisos y finalidades</h2>
+        <ul>
+          <li><strong>Mostrar sobre otras aplicaciones:</strong> presenta y permite mover los controles flotantes.</li>
+          <li><strong>Modificar ajustes de audio:</strong> consulta y cambia los canales de volumen seleccionados.</li>
+          <li><strong>Servicio en primer plano de uso especial:</strong> mantiene visibles los controles activados por el usuario y muestra una notificación persistente.</li>
+          <li><strong>Notificaciones:</strong> muestra el estado y controles del servicio en Android compatible.</li>
+          <li><strong>Inicio completado:</strong> restaura el servicio después de reiniciar, cuando el usuario lo dejó habilitado.</li>
+          <li><strong>Ignorar optimización de batería:</strong> solicitud opcional para mejorar continuidad en dispositivos con administración agresiva.</li>
+          <li><strong>Internet:</strong> permite cargar anuncios, enviar reportes voluntarios y transmitir diagnósticos y métricas de rendimiento.</li>
+          <li><strong>ID de publicidad:</strong> permite las funciones publicitarias y de medición de AdMob.</li>
+        </ul>
+        <p>Floating Volume no reproduce, graba ni transmite audio y no utiliza el permiso de servicio de reproducción multimedia.</p>
+      </section>
+      <section class="card">
+        <h2>6. Conservación, eliminación y seguridad</h2>
+        <p>Las preferencias locales pueden restablecerse borrando los datos de la aplicación. Desinstalarla no elimina reportes ya enviados ni información conservada por proveedores. Los reportes y sus imágenes permanecen hasta que soporte los elimine o atienda una solicitud de eliminación; actualmente no hay un borrado automático de todos los reportes a los 90 días.</p>
+        <p>Puedes solicitar la eliminación de un reporte y sus adjuntos escribiendo a <!--email_off--><a href="mailto:fixbyte3@gmail.com?subject=Eliminar%20reporte%20Floating%20Volume">fixbyte3@gmail.com</a><!--/email_off--> con el asunto “Eliminar reporte Floating Volume” y la referencia del reporte. Si no conservas la referencia, indícalo para que podamos evaluar cómo localizarlo sin solicitar información innecesaria.</p>
+        <p>Los datos de AdMob y Firebase se conservan según las políticas de sus proveedores y del servicio correspondiente, enlazadas arriba. Podemos ayudarte a tramitar consultas o solicitudes relacionadas con esos datos, aunque no contamos con una identidad de cuenta que permita localizar toda la telemetría de una persona.</p>
+        <p>Las transferencias utilizan conexiones cifradas HTTPS/TLS. Restringimos el acceso a los reportes y utilizamos servicios de proveedores que pueden tratar datos fuera de tu país. Ningún sistema es completamente infalible.</p>
+      </section>
+      <section class="card">
+        <h2>7. Menores</h2>
+        <p>Floating Volume no está diseñada específicamente para niños ni solicita conscientemente datos personales de menores. La configuración de público objetivo y anuncios de Google Play debe respetarse en cada publicación. Si consideras que existe un problema relacionado con un menor, contáctanos.</p>
+      </section>
+      <section class="card">
+        <h2>8. Derechos, contacto y cambios</h2>
+        <p>Puedes cambiar tus decisiones publicitarias desde las opciones disponibles en la aplicación y Android. Para preguntas, solicitudes o reclamaciones escribe a <!--email_off--><a href="mailto:fixbyte3@gmail.com">fixbyte3@gmail.com</a><!--/email_off-->. Indica “Privacidad Floating Volume” en el asunto; no envíes contraseñas ni información sensible.</p>
+        <p>Podemos actualizar esta política cuando cambien las funciones, proveedores o requisitos. Publicaremos la nueva fecha en esta misma URL antes o junto con la actualización aplicable.</p>
+      </section>
+    </article>
 
-<main>
-
-  <section>
-    <h2><span class="icon">ℹ️</span> 1. Información general</h2>
-    <p>
-      Floating Volume es una aplicación gratuita para Android que muestra botones flotantes
-      de control de volumen (+ y −) sobre otras aplicaciones. Esta política describe cómo
-      manejamos la información del usuario y qué datos terceros pueden recopilar.
-    </p>
     <hr>
-  </section>
 
-  <section>
-    <h2><span class="icon">🔒</span> 2. Datos que NO recopila la aplicación</h2>
-    <p>Floating Volume <strong>no recopila ni transmite</strong> a ningún servidor propio:</p>
-    <ul>
-      <li>Nombres, correos electrónicos ni datos de contacto</li>
-      <li>Contraseñas ni datos de cuenta</li>
-      <li>Grabaciones de audio, cámara ni micrófono</li>
-      <li>Historial de llamadas ni mensajes</li>
-      <li>Ubicación precisa o aproximada</li>
-    </ul>
-    <p>
-      Todas las preferencias del usuario (estilo visual, opacidad, posición de los botones,
-      configuración avanzada) se almacenan <strong>exclusivamente en el dispositivo</strong>
-      mediante SharedPreferences y no son enviadas a ningún servidor.
-    </p>
-    <hr>
-  </section>
-
-  <section>
-    <h2><span class="icon">⚙️</span> 3. Permisos del sistema utilizados</h2>
-    <ul>
-      <li><strong>SYSTEM_ALERT_WINDOW:</strong> Necesario para mostrar los botones flotantes sobre otras aplicaciones. Sin este permiso la app no puede funcionar.</li>
-      <li><strong>REQUEST_IGNORE_BATTERY_OPTIMIZATIONS:</strong> Mantiene el servicio activo en segundo plano, especialmente en dispositivos con gestión agresiva de batería.</li>
-      <li><strong>FOREGROUND_SERVICE / FOREGROUND_SERVICE_SPECIAL_USE:</strong> Ejecuta el servicio de controles flotantes activado por el usuario con una notificación persistente. La app no reproduce, graba ni transmite audio.</li>
-      <li><strong>MODIFY_AUDIO_SETTINGS:</strong> Permite leer y modificar el volumen del sistema.</li>
-      <li><strong>POST_NOTIFICATIONS:</strong> Muestra la notificación de control (requerido en Android 13+).</li>
-      <li><strong>RECEIVE_BOOT_COMPLETED:</strong> Reinicia el servicio automáticamente tras un reinicio del dispositivo.</li>
-      <li><strong>INTERNET:</strong> Requerido por Google AdMob para cargar anuncios.</li>
-    </ul>
-    <hr>
-  </section>
-
-  <section>
-    <h2><span class="icon">📢</span> 4. Publicidad — Google AdMob</h2>
-    <p>
-      Floating Volume utiliza Google AdMob para mostrar un banner mientras la pantalla
-      principal está abierta y anuncios recompensados voluntarios en Estilos Especiales.
-      Completar un anuncio desbloquea el estilo seleccionado durante 24 horas acumulables. Google AdMob puede procesar:
-    </p>
-    <ul>
-      <li>Identificador de publicidad de Android (AAID/GAID)</li>
-      <li>Dirección IP (para geolocalización aproximada)</li>
-      <li>Interacciones con el producto y los anuncios</li>
-      <li>Información de diagnóstico, rendimiento y uso de energía</li>
-    </ul>
-    <p>
-      Cuando sea requerido, puedes revisar o retirar tus decisiones desde
-      <em>Opciones de privacidad de anuncios</em> dentro de la aplicación. Desactivar la
-      personalización no necesariamente elimina los anuncios.
-    </p>
-    <p>
-      <a href="https://policies.google.com/privacy" target="_blank">Política de Privacidad de Google</a> ·
-      <a href="https://support.google.com/ads/answer/2662922" target="_blank">Inhabilitar anuncios personalizados</a>
-    </p>
-    <hr>
-  </section>
-
-  <section>
-    <h2><span class="icon">⚖️</span> 5. Consentimiento — RGPD / CCPA / LGPD</h2>
-    <p>
-      Cuando las leyes o políticas aplicables lo requieren, se utiliza Google User Messaging
-      Platform (UMP) para solicitar decisiones de privacidad antes de pedir anuncios.
-    </p>
-    <p>Puedes aceptar o rechazar el uso de datos para publicidad personalizada en cualquier momento.
-       Si rechazas, podrás seguir usando la aplicación con anuncios no personalizados.</p>
-    <hr>
-  </section>
-
-  <section>
-    <h2><span class="icon">👶</span> 6. Protección de menores</h2>
-    <p>
-      Floating Volume no está dirigida a menores de 13 años (ni de 16 años en el AEE).
-      No recopilamos conscientemente información de menores de edad.
-    </p>
-    <hr>
-  </section>
-
-  <section>
-    <h2><span class="icon">🗄️</span> 7. Retención de datos</h2>
-    <p>
-      Los datos de preferencias se almacenan localmente en el dispositivo y se eliminan
-      automáticamente al desinstalar la aplicación. No existe backend propio.
-    </p>
-    <hr>
-  </section>
-
-  <section>
-    <h2><span class="icon">🔄</span> 8. Cambios a esta política</h2>
-    <p>
-      Podemos actualizar esta política periódicamente. La fecha de última actualización
-      siempre se indicará al inicio de este documento.
-    </p>
-    <hr>
-  </section>
-
-  <section>
-    <h2><span class="icon">📬</span> 9. Contacto</h2>
-    <p>
-      Para preguntas o solicitudes relacionadas con esta política, escribe a
-      <a href="mailto:fixbyte3@gmail.com">fixbyte3@gmail.com</a>. La versión pública vigente está en
-      <a href="https://www.fixbitsolutions.com/privacy/floating-volume/">fixbitsolutions.com/privacy/floating-volume/</a>.
-    </p>
-    <hr>
-  </section>
-
-</main>
-
-<footer>
-  <p>© 2026 Fixbyte · Floating Volume · Todos los derechos reservados</p>
-</footer>
-
+    <article id="en" lang="en">
+      <section class="card notice"><h2>Privacy Policy — English</h2><p><strong>Updated October 9, 2026.</strong> Floating Volume (<code>com.fixbyte.floatingvolume</code>) provides floating volume controls. Preferences are stored on the device. The app uses Google AdMob for advertising, Supabase for voluntary support reports, and Google Firebase Crashlytics and Performance Monitoring to detect errors and improve performance. No user account is required.</p></section>
+      <section class="card"><h2>1. Controller and contact</h2><p>This policy applies to Floating Volume, published by <strong>FixBit Solutions</strong>. Privacy inquiries can be sent to <!--email_off--><a href="mailto:fixbyte3@gmail.com">fixbyte3@gmail.com</a><!--/email_off-->.</p></section>
+      <section class="card"><h2>2. Information stored locally</h2><p>The app stores settings on the device, including control style, size, opacity, position and behavior; audio channels; theme and language; and special-style access expiration. These preferences are not synchronized to a user account. Limited technical context, such as the style and service state, may be included in monitoring as described below.</p><p>We do not request contacts, passwords, recordings, call history, or message content, and do not access GPS location. Providers may estimate a general location from the IP address. Images are accessed only when you voluntarily select them for a support report.</p></section>
+      <section class="card"><h2>2a. Voluntary support reports</h2><p>When you choose to submit a report and accept the notice, we send its category, description, app version, and basic device information (manufacturer, model, and Android version). You may attach up to two JPG or PNG images of up to 2 MB each. Images are optional, and the app can be used without submitting reports. Screenshots are not captured automatically. Avoid including personal or sensitive information.</p><p>Reports and attachments are privately stored with Supabase in the United States. Only authorized support personnel can access them to investigate problems. Reports do not include an advertising ID or user account. Supabase may process IP addresses and connection metadata in infrastructure logs. Read <a href="https://supabase.com/privacy" rel="external">Supabase's privacy policy</a>.</p></section>
+      <section class="card"><h2>2b. Technical monitoring and performance</h2><p>Production versions incorporating Firebase Crashlytics and Performance Monitoring automatically send crash reports, non-fatal errors, stack traces, app and device information, installation identifiers, and performance and network metrics. We use this information to identify version- or device-specific problems and improve stability.</p><p>Limited technical context may include style, orientation, service state, permission state and error categories, app lifecycle, bounded technical sequences, window state, drag or menu events, volume requests and results, and ad loading or reward outcomes. We measure startup, permission requests, service operations, settings, volume operations, and support-report submission times. Operation counters are temporary and do not identify users. We do not intentionally send report text or attachments to Firebase, or record screens, audio, or content from other apps.</p><p>There is currently no in-app switch to disable this monitoring. It is independent of voluntary support reports and ad personalization. Google Analytics is not enabled in the app. Firebase may process IP addresses to determine the country and technical information through its providers. Read <a href="https://firebase.google.com/support/privacy" rel="external">Firebase's privacy and retention information</a>.</p></section>
+      <section class="card"><h2>3. Advertising and Google data processing</h2><p>An AdMob banner is shown on the main screen while the app is open. Users may voluntarily view a rewarded ad to unlock only the selected special style for <strong>72 cumulative hours</strong>. Each additional reward adds 72 hours to that same style, and access is granted only after the SDK confirms the reward. A free featured special style also rotates every 72 hours.</p><p>Google states that its Mobile Ads SDK may collect or share IP address for general location; product interactions such as launches, taps, and video views; diagnostic and performance information; and device or advertising identifiers. Google processes this data for advertising, measurement, analytics, and fraud prevention, and encrypts SDK data in transit using TLS. Read <a href="https://policies.google.com/privacy" rel="external">Google's Privacy Policy</a> and <a href="https://policies.google.com/technologies/partner-sites" rel="external">how Google uses information from partner apps</a>.</p></section>
+      <section class="card"><h2>4. Consent and advertising choices</h2><p>Where required by applicable law or policy, the app uses Google's User Messaging Platform (UMP) before requesting ads. Depending on region and choice, Google may serve personalized, non-personalized, limited, or technical-delivery ads. When required by UMP, an <strong>Ad privacy options</strong> entry point lets users review or withdraw choices. Users can also reset or delete the advertising ID through Android privacy controls. Disabling personalization does not necessarily remove ads.</p></section>
+      <section class="card"><h2>5. Android permissions</h2><ul><li><strong>Display over other apps:</strong> shows and moves floating controls.</li><li><strong>Modify audio settings:</strong> reads and changes selected volume channels.</li><li><strong>Special-use foreground service:</strong> keeps user-enabled controls available with a persistent notification.</li><li><strong>Notifications:</strong> shows service status and controls.</li><li><strong>Boot completed:</strong> restores a service left enabled by the user.</li><li><strong>Battery optimization exemption:</strong> optional request for continuity on aggressive device software.</li><li><strong>Internet:</strong> loads ads, submits voluntary reports, and sends diagnostics and performance metrics.</li><li><strong>Advertising ID:</strong> supports AdMob advertising and measurement.</li></ul><p>The app does not play, record, or transmit audio and does not use the media-playback foreground-service permission.</p></section>
+      <section class="card"><h2>6. Retention, deletion, and security</h2><p>Local preferences can be reset by clearing app data. Uninstalling the app does not delete previously submitted reports or data retained by providers. Reports and images remain until support removes them or processes a deletion request; there is currently no automatic 90-day deletion of all support reports.</p><p>To request deletion of a report and its attachments, email <!--email_off--><a href="mailto:fixbyte3@gmail.com?subject=Delete%20Floating%20Volume%20report">fixbyte3@gmail.com</a><!--/email_off--> with “Delete Floating Volume report” in the subject and your report reference. If you no longer have the reference, let us know so we can assess how to locate it without requesting unnecessary information.</p><p>AdMob and Firebase retention follows the applicable provider and service policies linked above. We can assist with related inquiries or requests, but we do not have an account identity that can locate all telemetry associated with a person.</p><p>Transfers use encrypted HTTPS/TLS connections. Report access is restricted. Providers may process data outside your country. No system is completely infallible.</p></section>
+      <section class="card"><h2>7. Children</h2><p>Floating Volume is not specifically designed for children and does not knowingly request personal information from children. Google Play audience and advertising settings must be respected in every release. Contact us if you believe a child-related privacy issue exists.</p></section>
+      <section class="card"><h2>8. Rights, contact, and updates</h2><p>Users can manage available advertising choices in the app and Android. For privacy requests, email <!--email_off--><a href="mailto:fixbyte3@gmail.com">fixbyte3@gmail.com</a><!--/email_off--> with “Floating Volume Privacy” in the subject and do not include passwords or sensitive information. We may update this policy as features, providers, or requirements change and will publish the effective date at this same URL.</p></section>
+    </article>
+  </main>
+  <footer><p>© 2026 FixBit Solutions · Floating Volume · <a href="/">Inicio / Home</a></p></footer>
 </body>
 </html>

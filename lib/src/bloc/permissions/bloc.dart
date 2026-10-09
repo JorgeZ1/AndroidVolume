@@ -1,224 +1,220 @@
+import 'dart:async';
 import 'package:bloc/bloc.dart' as a;
-import 'package:floating_volume/generated/native_api.g.dart';
-import 'package:floating_volume/src/single.dart';
+import 'package:flutter/widgets.dart';
 import 'package:permission_handler/permission_handler.dart';
-
+import '../../services/monitoring_service.dart';
 import 'event.dart' as e;
 import 'state.dart' as s;
 
-Stream<PermissionStatus> _createPermissionStream(
-  Permission permission, {
-  Duration pollingInterval = const Duration(seconds: 1),
-}) async* {
-  yield await permission.status;
-  while (true) {
-    await Future.delayed(pollingInterval);
-    yield await permission.status;
-  }
-}
+typedef PermissionReader = Future<PermissionStatus> Function(Permission);
+typedef PermissionReporter = Future<void> Function(Object, StackTrace, String);
 
-class Bloc extends a.Bloc<e.Event, s.State> {
-  Bloc(super.initialState) {
+class Bloc extends a.Bloc<e.Event, s.State> with WidgetsBindingObserver {
+  final PermissionReader _read;
+  final PermissionReader _request;
+  final Future<bool> Function() _settings;
+  final PermissionReporter _report;
+  Timer? _timer;
+  bool _pending = false;
+  bool _refreshing = false;
+  bool _closing = false;
+  final Duration pollingInterval;
+
+  Bloc(
+    super.initialState, {
+    PermissionReader? read,
+    PermissionReader? request,
+    Future<bool> Function()? settings,
+    PermissionReporter? report,
+    this.pollingInterval = const Duration(seconds: 5),
+  }) : _read = read ?? ((permission) => permission.status),
+       _request = request ?? ((permission) => permission.request()),
+       _settings = settings ?? openAppSettings,
+       _report =
+           report ??
+           ((error, stack, context) =>
+               MonitoringService.record(error, stack, source: context)) {
+    WidgetsBinding.instance.addObserver(this);
     on<e.Event>((event, emit) async {
-      switch (event) {
-        case e.Event.initialize:
-          emit(state.copyWith(operation: s.Operation.initializing));
-
-          final PermissionStatus overlayPermission =
-              await Permission.systemAlertWindow.status;
-          final notificationPermission = await Permission.notification.status;
-          final batteryOptimizationPermission =
-              await Permission.ignoreBatteryOptimizations.status;
-
-          emit(
-            state.copyWith(
-              operation: s.Operation.none,
-              overlayPermission: state.overlayPermission.copyWith(
-                isInitialized: true,
-                status: overlayPermission,
-              ),
-              notificationPermission: state.notificationPermission.copyWith(
-                isInitialized: true,
-                status: notificationPermission,
-              ),
-              batteryOptimizationPermission: state.batteryOptimizationPermission
-                  .copyWith(
+      if (_closing) return;
+      if (event == e.Event.initialize) {
+        if (_refreshing || _pending) return;
+        _refreshing = true;
+        try {
+          for (final permission in _permissions) {
+            if (_closing) return;
+            try {
+              final status = await _read(permission);
+              if (_closing || emit.isDone) return;
+              emit(
+                _replace(
+                  permission,
+                  _value(permission).copyWith(
                     isInitialized: true,
-                    status: batteryOptimizationPermission,
+                    status: status,
+                    operation:
+                        status.isGranted
+                            ? s.PermissionOperation.none
+                            : _value(permission).operation,
                   ),
-            ),
-          );
-
-          Future<void> observePermission(
-            Permission permission,
-            Function(PermissionStatus v) onStatusChanged,
-          ) async {
-            final stream = _createPermissionStream(
-              permission,
-              pollingInterval: Duration(seconds: 5),
-            );
-            await for (final status in stream) {
-              onStatusChanged(status);
+                ),
+              );
+            } catch (error, stack) {
+              await _diagnose(error, stack, permission, 'status');
+              if (!emit.isDone) {
+                // A failed status read must not strand startup on a spinner.
+                // Retain the last known status, never invent a permission grant.
+                emit(
+                  _replace(
+                    permission,
+                    _value(permission).copyWith(
+                      isInitialized: true,
+                      operation: s.PermissionOperation.failed,
+                    ),
+                  ),
+                );
+              }
             }
           }
-
-          await Future.wait([
-            observePermission(
-              Permission.systemAlertWindow,
-              (status) => emit(
-                state.copyWith(
-                  overlayPermission: state.overlayPermission.copyWith(
-                    status: status,
-                  ),
-                ),
-              ),
-            ),
-            observePermission(
-              Permission.notification,
-              (status) => emit(
-                state.copyWith(
-                  notificationPermission: state.notificationPermission.copyWith(
-                    status: status,
-                  ),
-                ),
-              ),
-            ),
-            observePermission(
-              Permission.ignoreBatteryOptimizations,
-              (status) => emit(
-                state.copyWith(
-                  batteryOptimizationPermission: state
-                      .batteryOptimizationPermission
-                      .copyWith(status: status),
-                ),
-              ),
-            ),
-          ]);
-
-          _createPermissionStream(Permission.systemAlertWindow).listen((
-            status,
-          ) {
-            emit(
-              state.copyWith(
-                overlayPermission: state.overlayPermission.copyWith(
-                  status: status,
-                ),
-              ),
-            );
-          });
-          break;
-
-        case e.Event.requestOverlayPermission:
+        } finally {
+          _refreshing = false;
+          if (!_closing && !isClosed) {
+            _timer ??= Timer.periodic(pollingInterval, (_) {
+              if (!isClosed) add(e.Event.initialize);
+            });
+          }
+        }
+        return;
+      }
+      // Claim the global gate before any await. Bloc events are concurrent.
+      if (_pending || _refreshing) return;
+      final permission = switch (event) {
+        e.Event.requestOverlayPermission => Permission.systemAlertWindow,
+        e.Event.requestNotificationPermission => Permission.notification,
+        e.Event.requestBatteryOptimizationPermission =>
+          Permission.ignoreBatteryOptimizations,
+        e.Event.initialize => throw StateError('Unreachable'),
+      };
+      _pending = true;
+      emit(
+        _replace(
+          permission,
+          _value(
+            permission,
+          ).copyWith(operation: s.PermissionOperation.requestingPermission),
+        ),
+      );
+      var failed = false;
+      try {
+        final status = await _read(permission);
+        final permissionName =
+            permission == Permission.systemAlertWindow
+                ? 'overlay'
+                : permission == Permission.notification
+                ? 'notification'
+                : 'battery';
+        await MonitoringService.permissionState(permissionName, status.name);
+        PermissionStatus result = status;
+        if (status.isPermanentlyDenied) {
+          await MonitoringService.event('permission_settings_opened');
+          if (!await _settings()) throw StateError('settings_unavailable');
+          // Opening Settings is not a grant. Resume/poll reads the actual status.
+        } else if (!status.isGranted) {
+          result = await MonitoringService.operation(
+            permission == Permission.systemAlertWindow
+                ? DiagnosticOperation.permissionOverlay
+                : permission == Permission.notification
+                ? DiagnosticOperation.permissionNotification
+                : DiagnosticOperation.permissionBattery,
+            () => _request(permission),
+            recordFailure: false,
+          );
+        }
+        await MonitoringService.permissionState(permissionName, result.name);
+        if (!emit.isDone) {
           emit(
-            state.copyWith(
-              overlayPermission: state.overlayPermission.copyWith(
-                operation: s.PermissionOperation.requestingPermission,
+            _replace(permission, _value(permission).copyWith(status: result)),
+          );
+        }
+      } catch (error, stack) {
+        failed = true;
+        await _diagnose(error, stack, permission, 'request');
+      } finally {
+        _pending = false;
+        if (!emit.isDone) {
+          emit(
+            _replace(
+              permission,
+              _value(permission).copyWith(
+                operation:
+                    failed
+                        ? s.PermissionOperation.failed
+                        : s.PermissionOperation.none,
               ),
             ),
           );
-
-          final overlayPermission = await requestPermission(
-            Permission.systemAlertWindow,
-            state.overlayPermission.status,
-          );
-
-          emit(
-            state.copyWith(
-              overlayPermission: state.overlayPermission.copyWith(
-                status: overlayPermission,
-                operation: s.PermissionOperation.none,
-              ),
-            ),
-          );
-
-          break;
-
-        case e.Event.requestNotificationPermission:
-          emit(
-            state.copyWith(
-              notificationPermission: state.notificationPermission.copyWith(
-                operation: s.PermissionOperation.requestingPermission,
-              ),
-            ),
-          );
-
-          final notificationPermission = await requestPermission(
-            Permission.notification,
-            state.notificationPermission.status,
-          );
-
-          emit(
-            state.copyWith(
-              notificationPermission: state.notificationPermission.copyWith(
-                status: notificationPermission,
-                operation: s.PermissionOperation.none,
-              ),
-            ),
-          );
-
-          break;
-
-        case e.Event.requestBatteryOptimizationPermission:
-          emit(
-            state.copyWith(
-              batteryOptimizationPermission: state.batteryOptimizationPermission
-                  .copyWith(
-                    operation: s.PermissionOperation.requestingPermission,
-                  ),
-            ),
-          );
-
-          final batteryOptimizationPermission = await requestPermission(
-            Permission.ignoreBatteryOptimizations,
-            state.batteryOptimizationPermission.status,
-          );
-
-          emit(
-            state.copyWith(
-              batteryOptimizationPermission: state.batteryOptimizationPermission
-                  .copyWith(
-                    status: batteryOptimizationPermission,
-                    operation: s.PermissionOperation.none,
-                  ),
-            ),
-          );
-          break;
+        }
       }
     });
   }
-}
 
-Future<PermissionStatus> requestPermission(
-  Permission permission,
-  PermissionStatus status,
-) async {
-  if (status.isGranted) {
-    return status;
+  static const _permissions = [
+    Permission.systemAlertWindow,
+    Permission.notification,
+    Permission.ignoreBatteryOptimizations,
+  ];
+
+  s.PermissionState _value(Permission permission) =>
+      permission == Permission.systemAlertWindow
+          ? state.overlayPermission
+          : permission == Permission.notification
+          ? state.notificationPermission
+          : state.batteryOptimizationPermission;
+
+  s.State _replace(Permission permission, s.PermissionState value) =>
+      permission == Permission.systemAlertWindow
+          ? state.copyWith(overlayPermission: value)
+          : permission == Permission.notification
+          ? state.copyWith(notificationPermission: value)
+          : state.copyWith(batteryOptimizationPermission: value);
+
+  Future<void> _diagnose(
+    Object error,
+    StackTrace stack,
+    Permission permission,
+    String stage,
+  ) async {
+    final name =
+        permission == Permission.systemAlertWindow
+            ? 'overlay'
+            : permission == Permission.notification
+            ? 'notification'
+            : 'battery';
+    final lifecycle = WidgetsBinding.instance.lifecycleState?.name ?? 'unknown';
+    final category = MonitoringService.permissionErrorCategory(error);
+    try {
+      await _report(
+        error,
+        stack,
+        'permission_${name}_${stage}_${category}_$lifecycle',
+      );
+    } catch (_) {
+      /* Monitoring cannot break permission recovery. */
+    }
   }
 
-  if (status.isPermanentlyDenied) {
-    await nativeApi.showToast(
-      "${permission.toString().split('.').last} permission is permanently denied. Please enable it in settings.",
-      ToastDuration.long,
-    );
-    final isOpened = await openAppSettings();
-    if (!isOpened) {
-      return status;
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !isClosed) {
+      add(e.Event.initialize);
     }
-
-    Future<PermissionStatus> listenToPermission() async {
-      await for (final newStatus in _createPermissionStream(
-        permission,
-        pollingInterval: const Duration(milliseconds: 500),
-      ).timeout(const Duration(minutes: 10))) {
-        return newStatus;
-      }
-
-      return status;
-    }
-
-    return listenToPermission();
   }
 
-  return permission.request();
+  @override
+  Future<void> close() {
+    _closing = true;
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
+    return super.close();
+  }
 }

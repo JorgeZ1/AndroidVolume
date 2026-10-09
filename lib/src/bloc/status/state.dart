@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 part 'state.freezed.dart';
 
-enum Operation { none, enabling, disabling }
+enum Operation { none, enabling, disabling, failed }
 
 @freezed
 abstract class State with _$State {

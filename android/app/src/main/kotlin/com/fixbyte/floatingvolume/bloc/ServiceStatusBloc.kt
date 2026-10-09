@@ -3,12 +3,16 @@ package com.fixbyte.floatingvolume.bloc
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import com.fixbyte.floatingvolume.Const
+import com.fixbyte.floatingvolume.ForegroundNotificationChannel
+import com.fixbyte.floatingvolume.TechnicalMonitoring
+import com.fixbyte.floatingvolume.DiagnosticOperation
+import android.os.SystemClock
 import com.fixbyte.floatingvolume.FloatingVolumeService
-import com.fixbyte.floatingvolume.inMain
 import com.fixbyte.floatingvolume.sharedPrefs
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -56,52 +60,69 @@ object ServiceStatusBloc {
     }
 
     suspend fun registerEvents(context: Context) {
-        val scope = CoroutineScope(Dispatchers.Main)
         val intent = Intent(context, FloatingVolumeService::class.java)
 
         event.collect {
-            when (it) {
+            // Resolve Toggle in this collector, without recursively emitting to
+            // the same unbuffered flow or launching a second event producer.
+            val action = if (it is Event.Toggle) {
+                if (_state.value is State.On) Event.Stop else Event.Start
+            } else it
+            when (action) {
                 is Event.Start -> {
                     if (_state.value is State.On) {
                         return@collect
                     }
 
-                    scope.inMain {
-                        // Use startForegroundService on Android O+ so the OS guarantees
-                        // a 5-second window before requiring startForeground() to be called.
-                        // This prevents ForegroundServiceDidNotStartInTimeException on
-                        // aggressive OEM skins like MIUI, ColorOS and One UI.
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            context.startForegroundService(intent)
-                        } else {
-                            context.startService(intent)
+                    val operation = TechnicalMonitoring.begin(DiagnosticOperation.SERVICE_START)
+                    val startedAt = SystemClock.elapsedRealtime()
+                    try {
+                        val ready = withContext(Dispatchers.Main.immediate) {
+                            ForegroundNotificationChannel.ensure(context)
+                            val signal = FloatingVolumeService.prepareStart()
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                context.startForegroundService(intent)
+                            } else {
+                                context.startService(intent)
+                            }
+                            signal
                         }
-                    }.join()
-
-                    persistState(context, true)
-                    _state.emit(State.On)
+                        // Suspend the event collector, not the main thread. A queued
+                        // Stop is processed only after onStartCommand has promoted us.
+                        withTimeout(10_000L) { ready.await() }
+                        TechnicalMonitoring.duration("native_service_ready", SystemClock.elapsedRealtime() - startedAt)
+                        TechnicalMonitoring.finish(DiagnosticOperation.SERVICE_START, operation)
+                        persistState(context, true)
+                        _state.emit(State.On)
+                    } catch (e: Exception) {
+                        if (e is CancellationException && e !is kotlinx.coroutines.TimeoutCancellationException) throw e
+                        persistState(context, false)
+                        _state.emit(State.Off)
+                        TechnicalMonitoring.error("service_start_failed", e)
+                        TechnicalMonitoring.finish(DiagnosticOperation.SERVICE_START, operation, false)
+                    }
                 }
                 is Event.Stop -> {
                     if (_state.value is State.Off) {
                         return@collect
                     }
 
-                    scope.inMain {
+                    val operation = TechnicalMonitoring.begin(DiagnosticOperation.SERVICE_STOP)
+                    try {
+                    withContext(Dispatchers.Main.immediate) {
                         context.stopService(intent)
-                    }.join()
+                    }
 
                     persistState(context, false)
                     _state.emit(State.Off)
-                }
-                is Event.Toggle -> {
-                    val newEvent = if (_state.value is State.On) {
-                        Event.Stop
-                    } else {
-                        Event.Start
+                    TechnicalMonitoring.finish(DiagnosticOperation.SERVICE_STOP, operation)
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        TechnicalMonitoring.finish(DiagnosticOperation.SERVICE_STOP, operation, false)
+                        TechnicalMonitoring.error("service_stop_failed", e)
                     }
-
-                    event.emit(newEvent)
                 }
+                is Event.Toggle -> error("Toggle must be resolved before dispatch")
             }
         }
     }

@@ -1,6 +1,9 @@
 import 'package:floating_volume/src/screens/home.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'package:floating_volume/src/app_language.dart';
 
 import 'package:floating_volume/src/bloc/permissions/bloc.dart' as bpermissions;
 import 'package:floating_volume/src/bloc/permissions/event.dart'
@@ -40,10 +43,35 @@ class FloatingVolumeApp extends StatelessWidget {
   );
 }
 
-class _FloatingVolumeAppView extends StatelessWidget {
+class _FloatingVolumeAppView extends StatefulWidget {
   const _FloatingVolumeAppView();
 
-  // Azul vibrante del diseño de referencia
+  @override
+  State<_FloatingVolumeAppView> createState() => _FloatingVolumeAppViewState();
+}
+
+class _FloatingVolumeAppViewState extends State<_FloatingVolumeAppView>
+    with WidgetsBindingObserver {
+  int _systemRevision = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    if (mounted) setState(() => _systemRevision++);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Vibrant blue from the reference design.
   static const _seed = Color(0xFF2979FF);
 
   static final _lightTheme = ThemeData(
@@ -85,20 +113,35 @@ class _FloatingVolumeAppView extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<btheme.Bloc, stheme.State>(
-    builder: (context, state) {
-      final themeMode = switch (state.theme) {
-        stheme.Theme.dark => ThemeMode.dark,
-        stheme.Theme.light => ThemeMode.light,
-        stheme.Theme.system => ThemeMode.system,
-      };
+  Widget build(BuildContext context) => ValueListenableBuilder<AppLanguage>(
+    valueListenable: LanguageSettings.selection,
+    builder:
+        (context, language, _) => BlocBuilder<btheme.Bloc, stheme.State>(
+          builder: (context, state) {
+            final themeMode = switch (state.theme) {
+              stheme.Theme.dark => ThemeMode.dark,
+              stheme.Theme.light => ThemeMode.light,
+              stheme.Theme.system => ThemeMode.system,
+            };
 
-      return MaterialApp(
-        home: const HomeScreen(),
-        theme: _lightTheme,
-        darkTheme: _darkTheme,
-        themeMode: themeMode,
-      );
-    },
+            final effective = LanguageSettings.isSpanish ? 'es' : 'en';
+            return MaterialApp(
+              home: HomeScreen(key: ValueKey('$effective-$_systemRevision')),
+              locale:
+                  language == AppLanguage.system
+                      ? null
+                      : Locale(language == AppLanguage.spanish ? 'es' : 'en'),
+              supportedLocales: const [Locale('en'), Locale('es')],
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              theme: _lightTheme,
+              darkTheme: _darkTheme,
+              themeMode: themeMode,
+            );
+          },
+        ),
   );
 }

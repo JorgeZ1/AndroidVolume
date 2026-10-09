@@ -48,10 +48,11 @@ class BootReceiver : BroadcastReceiver() {
         Log.d(TAG, "Auto-starting FloatingVolumeService after boot.")
 
         try {
+            ForegroundNotificationChannel.ensure(context)
             val serviceIntent = Intent(context, FloatingVolumeService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // Use startForegroundService to guarantee the 5-second window
-                // before startForeground() must be called.
+                // The service promotes itself synchronously; requesting startup
+                // alone does not fulfil the foreground-service contract.
                 context.startForegroundService(serviceIntent)
             } else {
                 context.startService(serviceIntent)

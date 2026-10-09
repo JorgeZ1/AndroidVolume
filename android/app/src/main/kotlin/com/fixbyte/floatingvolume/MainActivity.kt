@@ -19,14 +19,32 @@ import com.fixbyte.floatingvolume.pigeon_impl.ServiceStatusStreamHandlerImpl
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.EventChannel
 
 class MainActivity : FlutterActivity() {
+    private val settingsStreamHandler = SettingsStreamHandler()
+
+    override fun onDestroy() {
+        TechnicalMonitoring.state("activity_state", "destroyed")
+        settingsStreamHandler.dispose()
+        super.onDestroy()
+    }
+    override fun onResume() {
+        super.onResume()
+        TechnicalMonitoring.state("activity_state", "resumed")
+    }
+    override fun onPause() {
+        TechnicalMonitoring.state("activity_state", "paused")
+        super.onPause()
+    }
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
             return
 
-        val name = "Floating Volume Channel"
-        val descriptionText = "Channel for Floating Volume notifications"
+        val name = "Floating Volume"
+        val descriptionText = NativeLanguage.text(this,
+            "Channel for Floating Volume notifications",
+            "Canal de notificaciones de Floating Volume")
         val importance = NotificationManager.IMPORTANCE_DEFAULT
         val channel = NotificationChannel(Const.NOTIFICATION_CHANNEL_ID, name, importance).apply {
             description = descriptionText
@@ -39,6 +57,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        TechnicalMonitoring.state("activity_state", "created")
 
 
         val c = this
@@ -138,6 +157,23 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "floating_volume/monitoring")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "setEnabled") {
+                    TechnicalMonitoring.enabledOverride = call.arguments as? Boolean ?: false
+                    result.success(null)
+                } else if (call.method == "selfTest" && packageName.endsWith(".debug")) {
+                    val diagnostic = TechnicalMonitoring.begin(DiagnosticOperation.CHANNEL)
+                    TechnicalMonitoring.event("native_monitoring_self_test")
+                    TechnicalMonitoring.error("native_self_test", IllegalStateException("synthetic"))
+                    TechnicalMonitoring.measure("native_monitoring_self_test") {
+                        TechnicalMonitoring.state("self_test", "true")
+                    }
+                    android.util.Log.i("TechnicalMonitoring", "Native synthetic event recorded")
+                    TechnicalMonitoring.finish(DiagnosticOperation.CHANNEL, diagnostic)
+                    result.success(null)
+                } else result.notImplemented()
+            }
 
         lifecycleScope.apply {
             inMain {
@@ -163,149 +199,53 @@ class MainActivity : FlutterActivity() {
 
             inMain {
                 // Load persisted settings so they're ready before the service starts
-                WidgetSettings.load(sharedPrefs)
+                WidgetSettings.load(sharedPrefs, getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE))
+                EventChannel(flutterEngine.dartExecutor.binaryMessenger, "floating_volume/settings_changes")
+                    .setStreamHandler(settingsStreamHandler)
 
                 MethodChannel(
                     flutterEngine.dartExecutor.binaryMessenger,
                     "floating_volume/settings",
                 ).setMethodCallHandler { call, result ->
                     when (call.method) {
-                        "setOpacity" -> {
-                            val v = (call.argument<Double>("value") ?: 1.0).toFloat()
-                            WidgetSettings.opacity = v
-                            WidgetSettings.save(sharedPrefs)
+                        "reportDiagnostics" -> {
+                            @Suppress("DEPRECATION")
+                            val info = packageManager.getPackageInfo(packageName, 0)
+                            result.success(mapOf(
+                                "manufacturer" to android.os.Build.MANUFACTURER,
+                                "model" to android.os.Build.MODEL,
+                                "android_sdk" to android.os.Build.VERSION.SDK_INT,
+                                "app_version" to (info.versionName ?: "unknown"),
+                                "version_code" to if (android.os.Build.VERSION.SDK_INT >= 28)
+                                    info.longVersionCode else @Suppress("DEPRECATION") info.versionCode.toLong(),
+                            ))
+                        }
+                        "refreshLanguage" -> {
+                            createNotificationChannel()
+                            FloatingVolumeService.notifyLanguageChanged()
                             result.success(null)
                         }
-                        "setColorMode" -> {
-                            val mode = call.argument<String>("mode") ?: "auto"
-                            WidgetSettings.colorMode = when (mode) {
-                                "blue" -> WidgetSettings.ColorMode.BLUE
-                                "dark" -> WidgetSettings.ColorMode.DARK
-                                else   -> WidgetSettings.ColorMode.AUTO
+                        "getSettings" -> result.success(WidgetSettings.snapshot())
+                        "getButtonCornerRadius" -> result.success(WidgetSettings.buttonCornerRadius.toDouble())
+                        "updateSettings", "restoreSection" -> {
+                            try {
+                                val previousStream = WidgetSettings.selectedAudioStream
+                                val snapshot = if (call.method == "restoreSection") {
+                                    WidgetSettings.restore(call.argument<String>("section") ?: "", sharedPrefs)
+                                } else {
+                                    @Suppress("UNCHECKED_CAST")
+                                    val changes = call.arguments as? Map<String, Any?> ?: emptyMap()
+                                    WidgetSettings.update(changes, sharedPrefs)
+                                }
+                                if (previousStream != WidgetSettings.selectedAudioStream) {
+                                    lifecycleScope.inIO {
+                                        SystemVolumeBloc.event.emit(SystemVolumeBloc.Event.SelectStream(WidgetSettings.selectedAudioStream))
+                                    }
+                                }
+                                result.success(snapshot)
+                            } catch (error: IllegalArgumentException) {
+                                result.error("invalid_settings", error.message, null)
                             }
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setStyle" -> {
-                            val s = call.argument<String>("style") ?: "android"
-                            WidgetSettings.style = WidgetSettings.Style.fromName(s)
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setPinned" -> {
-                            val pinned = call.argument<Boolean>("pinned") ?: false
-                            WidgetSettings.isPinned = pinned
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setUseSystemVolume" -> {
-                            val v = call.argument<Boolean>("value") ?: false
-                            WidgetSettings.useSystemVolume = v
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setAudioStream" -> {
-                            WidgetSettings.selectedAudioStream = AudioStream.fromName(call.argument<String>("value"))
-                            WidgetSettings.save(sharedPrefs)
-                            lifecycleScope.inIO { SystemVolumeBloc.event.emit(SystemVolumeBloc.Event.SelectStream(WidgetSettings.selectedAudioStream)) }
-                            result.success(null)
-                        }
-                        "setShowAudioMixer" -> {
-                            WidgetSettings.showAudioMixer = call.argument<Boolean>("value") ?: true
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setAutoPeekEnabled" -> {
-                            WidgetSettings.autoPeekEnabled = call.argument<Boolean>("value") ?: true
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setAutoPeekDelay" -> {
-                            WidgetSettings.autoPeekDelay = (call.argument<Int>("value") ?: 1800).coerceIn(1000, 30000)
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setPeekSize" -> {
-                            WidgetSettings.peekSize = (call.argument<Int>("value") ?: 16).coerceIn(8, 24)
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setCreativeAnimSpeed" -> {
-                            val v = call.argument<Double>("value") ?: 1.0
-                            WidgetSettings.creativeAnimSpeed = v.toFloat()
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setCreativeGlowIntensity" -> {
-                            val v = call.argument<Double>("value") ?: 1.0
-                            WidgetSettings.creativeGlowIntensity = v.toFloat()
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setButtonSize" -> {
-                            WidgetSettings.buttonSize = call.argument<Int>("value") ?: 52
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setButtonCornerRadius" -> {
-                            WidgetSettings.buttonCornerRadius = (call.argument<Double>("value") ?: 0.5).toFloat()
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setButtonGap" -> {
-                            WidgetSettings.buttonGap = call.argument<Int>("value") ?: 10
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setIndicatorOpacity" -> {
-                            WidgetSettings.indicatorOpacity = (call.argument<Double>("value") ?: 1.0).toFloat()
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setIndicatorHeight" -> {
-                            WidgetSettings.indicatorHeight = call.argument<Int>("value") ?: 160
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setIndicatorWidth" -> {
-                            WidgetSettings.indicatorWidth = call.argument<Int>("value") ?: 48
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setIndicatorGap" -> {
-                            WidgetSettings.indicatorGap = call.argument<Int>("value") ?: 10
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setIndicatorHideDelay" -> {
-                            WidgetSettings.indicatorHideDelay = call.argument<Int>("value") ?: 1800
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setVolumeStep" -> {
-                            WidgetSettings.volumeStep = (call.argument<Int>("value") ?: 1).coerceIn(1, 5)
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setHapticFeedback" -> {
-                            WidgetSettings.hapticFeedback = call.argument<Boolean>("value") ?: false
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setShowIndicatorNumber" -> {
-                            WidgetSettings.showIndicatorNumber = call.argument<Boolean>("value") ?: true
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setShowIndicatorIcon" -> {
-                            WidgetSettings.showIndicatorIcon = call.argument<Boolean>("value") ?: true
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
-                        }
-                        "setIndicatorAnimation" -> {
-                            WidgetSettings.indicatorAnimation = call.argument<String>("value") ?: "fade"
-                            WidgetSettings.save(sharedPrefs)
-                            result.success(null)
                         }
                         else -> result.notImplemented()
                     }

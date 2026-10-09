@@ -16,6 +16,15 @@ abstract class State with _$State {
 
   const State._();
 
+  bool get isRequesting => [
+    overlayPermission,
+    notificationPermission,
+    batteryOptimizationPermission,
+  ].any(
+    (permission) =>
+        permission.operation == PermissionOperation.requestingPermission,
+  );
+
   bool get isInitialized =>
       overlayPermission.isInitialized &&
       notificationPermission.isInitialized &&
@@ -27,7 +36,7 @@ abstract class State with _$State {
       batteryOptimizationPermission.status.isGranted;
 }
 
-enum PermissionOperation { none, requestingPermission }
+enum PermissionOperation { none, requestingPermission, failed }
 
 @freezed
 abstract class PermissionState with _$PermissionState {

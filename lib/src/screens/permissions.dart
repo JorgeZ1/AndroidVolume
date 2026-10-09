@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'package:floating_volume/src/app_language.dart';
 
 import 'package:floating_volume/src/bloc/permissions/bloc.dart' as bpermissions;
 import 'package:floating_volume/src/bloc/permissions/event.dart'
@@ -19,7 +20,7 @@ class PermissionsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Permissions"),
+        title: Text(tr('Permissions', 'Permisos')),
         centerTitle: false,
         scrolledUnderElevation: 0,
       ),
@@ -27,30 +28,42 @@ class PermissionsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            "Grant all permissions to enable the floating widget.",
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: cs.onSurface.withAlpha(178),
+            tr(
+              'Grant all permissions to enable the floating widget.',
+              'Concede los permisos para activar los botones flotantes.',
             ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: cs.onSurface.withAlpha(178)),
           ),
           const Gap(20),
-          const _PermissionCard(
+          _PermissionCard(
             icon: Icons.picture_in_picture_alt_rounded,
-            title: "Overlay",
-            description: "Draw over other apps",
+            title: tr('Overlay', 'Superposición'),
+            description: tr(
+              'Draw over other apps',
+              'Mostrar sobre otras aplicaciones',
+            ),
             type: _PermissionType.overlay,
           ),
           const Gap(10),
-          const _PermissionCard(
+          _PermissionCard(
             icon: Icons.notifications_outlined,
-            title: "Notifications",
-            description: "Show a persistent notification while active",
+            title: tr('Notifications', 'Notificaciones'),
+            description: tr(
+              'Show a persistent notification while active',
+              'Mostrar una notificación persistente mientras está activo',
+            ),
             type: _PermissionType.notification,
           ),
           const Gap(10),
-          const _PermissionCard(
+          _PermissionCard(
             icon: Icons.battery_charging_full_outlined,
-            title: "Battery Optimization",
-            description: "Prevent the system from stopping the service",
+            title: tr('Battery Optimization', 'Optimización de batería'),
+            description: tr(
+              'Prevent the system from stopping the service',
+              'Evitar que el sistema detenga el servicio',
+            ),
             type: _PermissionType.battery,
           ),
           const Gap(24),
@@ -88,9 +101,13 @@ class _PermissionCard extends StatelessWidget {
 
     return BlocBuilder<bpermissions.Bloc, spermissions.State>(
       builder: (context, state) {
+        final permission = switch (type) {
+          _PermissionType.overlay => state.overlayPermission,
+          _PermissionType.notification => state.notificationPermission,
+          _PermissionType.battery => state.batteryOptimizationPermission,
+        };
         final isGranted = switch (type) {
-          _PermissionType.overlay =>
-            state.overlayPermission.status.isGranted,
+          _PermissionType.overlay => state.overlayPermission.status.isGranted,
           _PermissionType.notification =>
             state.notificationPermission.status.isGranted,
           _PermissionType.battery =>
@@ -111,14 +128,16 @@ class _PermissionCard extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
             side: BorderSide(
-              color: isGranted
-                  ? Colors.green.shade600.withAlpha(60)
-                  : cs.outlineVariant,
+              color:
+                  isGranted
+                      ? Colors.green.shade600.withAlpha(60)
+                      : cs.outlineVariant,
             ),
           ),
-          color: isGranted
-              ? Colors.green.shade600.withAlpha(12)
-              : cs.surfaceContainerLow,
+          color:
+              isGranted
+                  ? Colors.green.shade600.withAlpha(12)
+                  : cs.surfaceContainerLow,
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -128,9 +147,10 @@ class _PermissionCard extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: isGranted
-                    ? Colors.green.shade600.withAlpha(25)
-                    : cs.surfaceContainerHighest,
+                color:
+                    isGranted
+                        ? Colors.green.shade600.withAlpha(25)
+                        : cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -142,23 +162,46 @@ class _PermissionCard extends StatelessWidget {
               title,
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-            subtitle: Text(description),
-            trailing: isGranted
-                ? Icon(Icons.check_circle_rounded, color: Colors.green.shade600)
-                : FilledButton.tonal(
-                    onPressed: () {
-                      context.read<bpermissions.Bloc>().add(requestEvent);
-                    },
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
+            subtitle: Text(
+              permission.operation == spermissions.PermissionOperation.failed
+                  ? tr(
+                    'Could not open the permission request. Try again.',
+                    'No se pudo abrir la solicitud. Inténtalo de nuevo.',
+                  )
+                  : description,
+            ),
+            trailing:
+                permission.operation ==
+                        spermissions.PermissionOperation.requestingPermission
+                    ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : isGranted
+                    ? Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.green.shade600,
+                    )
+                    : FilledButton.tonal(
+                      onPressed:
+                          state.isRequesting
+                              ? null
+                              : () {
+                                context.read<bpermissions.Bloc>().add(
+                                  requestEvent,
+                                );
+                              },
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      child: Text(tr('Grant', 'Conceder')),
                     ),
-                    child: const Text("Grant"),
-                  ),
           ),
         );
       },
@@ -183,9 +226,12 @@ class _HelpTile extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Icon(Icons.help_outline_rounded, color: cs.onSurfaceVariant),
-        title: const Text("App keeps closing?"),
-        subtitle: const Text(
-          "Your device may be killing the service. Tap to learn more.",
+        title: Text(tr('App keeps closing?', '¿La app se sigue cerrando?')),
+        subtitle: Text(
+          tr(
+            'Your device may be killing the service. Tap to learn more.',
+            'Tu dispositivo podría estar deteniendo el servicio. Toca para saber más.',
+          ),
         ),
         trailing: Icon(Icons.open_in_new_rounded, color: cs.onSurfaceVariant),
         onTap: () async {
